@@ -1,0 +1,276 @@
+/* ====== Design Tokens ====== */
+:root {
+  --bg0: #000000;
+  --bg1: #05070f;
+  --card: rgba(255, 255, 255, 0.06);
+  --card2: rgba(255, 255, 255, 0.09);
+  --stroke: rgba(255, 255, 255, 0.12);
+
+  --text: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.72);
+
+  --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  --r-lg: 18px;
+  --r-xl: 26px;
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+
+  --container: 1100px;
+}
+
+/* ====== Base Reset ====== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg0);
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+}
+
+.container {
+  width: min(var(--container), 92%);
+  margin-inline: auto;
+}
+
+/* ====== Black “Magic Glow” Background ====== */
+.bg-gradient {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+
+  background:
+    radial-gradient(circle at 20% 20%, rgba(120, 0, 255, 0.32), transparent 55%),
+    radial-gradient(circle at 80% 35%, rgba(0, 200, 255, 0.20), transparent 60%),
+    radial-gradient(circle at 50% 90%, rgba(255, 60, 120, 0.16), transparent 55%),
+    linear-gradient(180deg, var(--bg1), var(--bg0));
+
+  background-size: 140% 140%;
+  animation: darkGlow 12s ease-in-out infinite;
+}
+
+.bg-gradient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.68);
+  z-index: -1;
+}
+
+@keyframes darkGlow {
+  0%   { transform: scale(1);    filter: blur(28px) saturate(1.2); }
+  50%  { transform: scale(1.05); filter: blur(44px) saturate(1.4); }
+  100% { transform: scale(1);    filter: blur(28px) saturate(1.2); }
+}
+
+/* ====== Page Layout ====== */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding: var(--space-6) 0;
+}
+
+/* ====== Header / Nav ====== */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(14px);
+  background: rgba(0, 0, 0, 0.55);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.logo {
+  font-weight: 900;
+  letter-spacing: 2px;
+  font-size: 16px;
+  text-transform: uppercase;
+  opacity: 0.95;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.nav__link {
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+  opacity: 0.85;
+  transition: 160ms ease;
+}
+
+.nav__link:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+/* ====== Typography ====== */
+h1 {
+  font-size: clamp(34px, 4.3vw, 58px);
+  line-height: 1.05;
+  margin: 0 0 var(--space-3);
+}
+
+h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 22px;
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ====== Buttons ====== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  border: 0;
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-weight: 800;
+
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(0, 0, 0, 0.92);
+
+  transition: 160ms ease;
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* ====== Cards / Badges ====== */
+.card {
+  padding: 20px;
+  border-radius: var(--r-lg);
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+}
+
+.badge {
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* ====== Grid for adventure cards ====== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.card {
+  grid-column: span 12;
+}
+
+@media (min-width: 800px) {
+  .card {
+    grid-column: span 6;
+  }
+}
+
+/* ====== Adventure card bits ====== */
+.card__top {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.card__title {
+  margin: 0;
+}
+
+.card__meta {
+  margin-top: var(--space-2);
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.card__actions {
+  margin-top: var(--space-3);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ====== Footer ====== */
+.footer {
+  padding: 18px 0;
+  border-top: 1px solid var(--stroke);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+}
+
+.footer__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}

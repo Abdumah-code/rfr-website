@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RFR — Feedback</title>
+    <link rel="stylesheet" href="./src/assets/scss/main.css" />
+  </head>
+  <body>
+    <div class="bg-gradient"></div>
+
+    <div class="page">
+      <header class="header">
+        <div class="container header__inner">
+          <div class="logo">RFR</div>
+          <nav class="nav">
+            <a class="nav__link" href="./index.html">Home</a>
+            <a class="nav__link" href="./adventures.html">Adventures</a>
+          </nav>
+        </div>
+      </header>
+
+      <main class="main">
+        <div class="container">
+          <h1>Feedback</h1>
+          <p id="fbInfo">Laddar formulär…</p>
+
+          <div class="card" style="padding: 0; overflow: hidden">
+            <iframe
+              id="fbFrame"
+              title="Feedback form"
+              src=""
+              style="width: 100%; height: 75vh; border: 0"
+              loading="lazy"
+            ></iframe>
+          </div>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <div class="container footer__inner">
+          <p>© <span id="year"></span> RFR.</p>
+        </div>
+      </footer>
+    </div>
+
+    <script src="./src/assets/js/main.js"></script>
+    <script src="./src/assets/js/feedback.js"></script>
+  </body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RFR Website</title>
+
+    <link rel="stylesheet" href="./src/assets/scss/main.css" />
+  </head>
+
+  <body>
+    <!-- Background layer -->
+    <div class="bg-gradient"></div>
+
+    <!-- Page layout -->
+    <div class="page">
+      <header class="header">
+        <div class="container header__inner">
+          <div class="logo">DND</div>
+
+          <nav class="nav">
+            <a class="nav__link" href="./index.html">Home</a>
+            <a class="nav__link" href="./adventures.html">Adventures</a>
+            <a class="nav__link" href="./feedback.html">Feedback</a>
+          </nav>
+
+
+          <button class="btn btn--ghost" id="ctaBtn">Get Started</button>
+        </div>
+      </header>
+
+      <main class="main">
+        <div class="container">
+          <h1>Roll for Roleplay</h1>
+          <p>
+            Vi bygger ett community för episka äventyr, bra DMs och en seriös men varm vibe.
+          </p>
+
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;">
+            <a class="btn" href="./adventures.html">Se Adventures</a>
+            <a class="btn btn--ghost" href="./orders.html">Orders</a>
+          </div>
+
+          <div style="margin-top:24px;" class="card">
+            <h2>Who we are</h2>
+            <p>
+              Kort om er vision, hur sessions funkar, och varför RFR är annorlunda.
+            </p>
+          </div>
+        </div>
+      </main>
+
+
+      <footer class="footer">
+        <div class="container footer__inner">
+          <p>© <span id="year"></span> RFR. All rights reserved.</p>
+
+          <div class="footer__links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Instagram</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="./src/assets/js/main.js"></script>
+  </body>
+</html>
