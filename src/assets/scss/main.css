@@ -1,5 +1,4 @@
 @charset "UTF-8";
-/* ====== Design Tokens ====== */
 :root {
   --bg0: #000000;
   --bg1: #05070f;
@@ -20,7 +19,6 @@
   --container: 1100px;
 }
 
-/* ====== Base Reset ====== */
 *,
 *::before,
 *::after {
@@ -49,7 +47,6 @@ a {
   margin-inline: auto;
 }
 
-/* ====== Black “Magic Glow” Background ====== */
 .bg-gradient {
   position: fixed;
   inset: 0;
@@ -81,7 +78,7 @@ a {
     filter: blur(28px) saturate(1.2);
   }
 }
-/* ====== Page Layout ====== */
+
 .page {
   min-height: 100vh;
   display: flex;
@@ -93,7 +90,6 @@ a {
   padding: var(--space-6) 0;
 }
 
-/* ====== Header / Nav ====== */
 .header {
   position: sticky;
   top: 0;
@@ -139,7 +135,6 @@ a {
   transform: translateY(-1px);
 }
 
-/* ====== Typography ====== */
 h1 {
   font-size: clamp(34px, 4.3vw, 58px);
   line-height: 1.05;
@@ -156,7 +151,6 @@ p {
   line-height: 1.6;
 }
 
-/* ====== Buttons ====== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -193,7 +187,6 @@ p {
   cursor: not-allowed;
 }
 
-/* ====== Cards / Badges ====== */
 .card {
   padding: 20px;
   border-radius: var(--r-lg);
@@ -213,7 +206,6 @@ p {
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-/* ====== Grid for adventure cards ====== */
 .grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -230,7 +222,6 @@ p {
     grid-column: span 6;
   }
 }
-/* ====== Adventure card bits ====== */
 .card__top {
   display: flex;
   align-items: start;
@@ -256,7 +247,6 @@ p {
   flex-wrap: wrap;
 }
 
-/* ====== Footer ====== */
 .footer {
   padding: 18px 0;
   border-top: 1px solid var(--stroke);
@@ -271,4 +261,4 @@ p {
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-}/*# sourceMappingURL=main.css.map */
+}
