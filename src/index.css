@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg0: #000000;
+  --color-bg1: #05070f;
+  --color-card: rgba(255, 255, 255, 0.06);
+  --color-card2: rgba(255, 255, 255, 0.09);
+  --color-stroke: rgba(255, 255, 255, 0.12);
+  --color-text-main: rgba(255, 255, 255, 0.92);
+  --color-muted: rgba(255, 255, 255, 0.72);
+}
+
+@layer base {
+  :root {
+    --bg0: #000000;
+    --bg1: #05070f;
+    --card: rgba(255, 255, 255, 0.06);
+    --card2: rgba(255, 255, 255, 0.09);
+    --stroke: rgba(255, 255, 255, 0.12);
+    --text: rgba(255, 255, 255, 0.92);
+    --muted: rgba(255, 255, 255, 0.72);
+    --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+    --r-lg: 18px;
+    --r-xl: 26px;
+    --space-1: 8px;
+    --space-2: 12px;
+    --space-3: 16px;
+    --space-4: 24px;
+    --space-5: 32px;
+    --space-6: 48px;
+    --container: 1100px;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg0);
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-animated {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: radial-gradient(circle at 20% 20%, rgba(120, 0, 255, 0.32), transparent 55%), 
+                radial-gradient(circle at 80% 35%, rgba(0, 200, 255, 0.2), transparent 60%), 
+                radial-gradient(circle at 50% 90%, rgba(255, 60, 120, 0.16), transparent 55%), 
+                linear-gradient(180deg, var(--bg1), var(--bg0));
+    background-size: 140% 140%;
+    animation: darkGlow 12s ease-in-out infinite;
+  }
+
+  .bg-gradient-animated::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.68);
+    z-index: -1;
+  }
+}
+
+@keyframes darkGlow {
+  0% { transform: scale(1); filter: blur(28px) saturate(1.2); }
+  50% { transform: scale(1.05); filter: blur(44px) saturate(1.4); }
+  100% { transform: scale(1); filter: blur(28px) saturate(1.2); }
+}
