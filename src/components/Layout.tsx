@@ -1,23 +1,24 @@
 import React, { useState } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { getDMs } from "../utils/dms";
 
 export default function Layout() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loggedInUser, setLoggedInUser] = useState<string | null>(null);
+  const location = useLocation();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUsername = username.trim().toLowerCase();
-    
+
     if (cleanUsername === "david" && password === "david") {
       setLoggedInUser("David");
       setUsername("");
       setPassword("");
       return;
     }
-    
+
     const dms = getDMs();
     const dm = dms.find(d => d.username === cleanUsername && d.password === password);
     if (dm) {
@@ -29,108 +30,307 @@ export default function Layout() {
     }
   };
 
-  const handleLogout = () => {
-    setLoggedInUser(null);
-  };
+  const handleLogout = () => setLoggedInUser(null);
+
+  const isActive = (path: string) =>
+    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
   return (
     <>
-      <div className="bg-gradient-animated"></div>
+      {/* Atmospheric background */}
+      <div className="bg-atmosphere" />
 
       <div className="min-h-screen flex flex-col">
-        <header className="sticky top-0 z-50 backdrop-blur-[14px] bg-black/55 border-b border-stroke">
-          <div className="w-[min(1100px,92%)] mx-auto flex items-center justify-between gap-4 py-3">
-            <div className="font-black tracking-[2px] text-base uppercase opacity-95">
-              RFR
-            </div>
-            
-            <div className="flex items-center gap-6">
-              <nav className="flex items-center gap-4">
-                <Link to="/" className="no-underline font-bold text-sm opacity-85 hover:opacity-100 hover:-translate-y-[1px] transition-all duration-160 cursor-pointer">
-                  Home
-                </Link>
-                <Link to="/adventures" className="no-underline font-bold text-sm opacity-85 hover:opacity-100 hover:-translate-y-[1px] transition-all duration-160 cursor-pointer">
-                  Adventures
-                </Link>
-                {!loggedInUser && (
-                  <>
-                    <Link to="/apply" className="no-underline font-bold text-sm opacity-85 hover:opacity-100 hover:-translate-y-[1px] transition-all duration-160 cursor-pointer">
-                      Apply for DM
-                    </Link>
-                    <Link to="/feedback" className="no-underline font-bold text-sm opacity-85 hover:opacity-100 hover:-translate-y-[1px] transition-all duration-160 cursor-pointer">
-                      Feedback
-                    </Link>
-                  </>
-                )}
-                {loggedInUser && (
-                  <>
-                    <Link to="/mail" className="no-underline font-bold text-sm text-amber-400 hover:text-amber-300 hover:-translate-y-[1px] transition-all duration-160 cursor-pointer">
-                      Mail
-                    </Link>
-                    <Link to="/settings" className="no-underline font-bold text-sm text-amber-400 hover:text-amber-300 hover:-translate-y-[1px] transition-all duration-160 cursor-pointer">
-                      Settings
-                    </Link>
-                  </>
-                )}
-                {loggedInUser === "David" && (
-                  <Link to="/admin" className="no-underline font-bold text-sm text-amber-400 hover:text-amber-300 hover:-translate-y-[1px] transition-all duration-160 cursor-pointer">
-                    Admin
+        {/* ── Header ── */}
+        <header
+          className="sticky top-0 z-50"
+          style={{
+            background: "rgba(7, 5, 10, 0.82)",
+            backdropFilter: "blur(18px)",
+            borderBottom: "1px solid rgba(201, 160, 48, 0.18)",
+            boxShadow: "0 4px 30px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div
+            className="mx-auto flex items-center justify-between gap-6 py-4"
+            style={{ maxWidth: "var(--container)", padding: "14px 5%" }}
+          >
+            {/* Logo */}
+            <Link
+              to="/"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                textDecoration: "none",
+              }}
+            >
+              {/* Try to load the logo image; fallback to SVG emblem */}
+              <img
+                src="/logo.png"
+                alt="RFR"
+                style={{ height: "36px", width: "36px", objectFit: "contain" }}
+                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 900,
+                  fontSize: "18px",
+                  letterSpacing: "0.2em",
+                  color: "var(--gold)",
+                  textShadow: "0 0 20px rgba(201,160,48,0.4)",
+                }}
+              >
+                RFR
+              </span>
+            </Link>
+
+            {/* Nav + Auth */}
+            <div className="flex items-center gap-6 flex-wrap">
+              {/* Navigation links */}
+              <nav className="flex items-center gap-1">
+                {[
+                  { to: "/", label: "Home" },
+                  { to: "/adventures", label: "Adventures" },
+                  ...(!loggedInUser
+                    ? [
+                        { to: "/apply", label: "Apply for DM" },
+                        { to: "/feedback", label: "Feedback" },
+                      ]
+                    : []),
+                  ...(loggedInUser
+                    ? [
+                        { to: "/mail", label: "Mail", gold: true },
+                        { to: "/settings", label: "Settings", gold: true },
+                      ]
+                    : []),
+                  ...(loggedInUser === "David"
+                    ? [{ to: "/admin", label: "Admin", gold: true }]
+                    : []),
+                ].map(({ to, label, gold }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      textDecoration: "none",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      transition: "all 0.18s ease",
+                      color: isActive(to)
+                        ? "var(--gold)"
+                        : gold
+                        ? "var(--gold-light)"
+                        : "var(--muted)",
+                      background: isActive(to)
+                        ? "rgba(201,160,48,0.1)"
+                        : "transparent",
+                      border: isActive(to)
+                        ? "1px solid rgba(201,160,48,0.25)"
+                        : "1px solid transparent",
+                    }}
+                    onMouseEnter={e => {
+                      if (!isActive(to)) {
+                        (e.currentTarget as HTMLElement).style.color = "var(--gold-light)";
+                        (e.currentTarget as HTMLElement).style.background = "rgba(201,160,48,0.06)";
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!isActive(to)) {
+                        (e.currentTarget as HTMLElement).style.color = gold ? "var(--gold-light)" : "var(--muted)";
+                        (e.currentTarget as HTMLElement).style.background = "transparent";
+                      }
+                    }}
+                  >
+                    {label}
                   </Link>
-                )}
+                ))}
               </nav>
 
-              <div className="flex items-center gap-3 border-l border-white/10 pl-6">
+              {/* Auth section */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  paddingLeft: "16px",
+                  borderLeft: "1px solid rgba(201,160,48,0.15)",
+                }}
+              >
                 {!loggedInUser ? (
-                  <form onSubmit={handleLogin} className="flex items-center gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Användarnamn" 
+                  <form
+                    onSubmit={handleLogin}
+                    style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Användarnamn"
                       value={username}
                       onChange={e => setUsername(e.target.value)}
-                      className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:border-amber-400 w-28 transition-colors"
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(201,160,48,0.18)",
+                        color: "var(--text)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "14px",
+                        width: "118px",
+                        outline: "none",
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={e => (e.target.style.borderColor = "rgba(201,160,48,0.5)")}
+                      onBlur={e => (e.target.style.borderColor = "rgba(201,160,48,0.18)")}
                     />
-                    <input 
-                      type="password" 
-                      placeholder="Lösenord" 
+                    <input
+                      type="password"
+                      placeholder="Lösenord"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:border-amber-400 w-28 transition-colors"
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(201,160,48,0.18)",
+                        color: "var(--text)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "14px",
+                        width: "110px",
+                        outline: "none",
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={e => (e.target.style.borderColor = "rgba(201,160,48,0.5)")}
+                      onBlur={e => (e.target.style.borderColor = "rgba(201,160,48,0.18)")}
                     />
-                    <button type="submit" className="px-3 py-2 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/50 text-sm font-bold hover:bg-amber-500/30 transition-colors cursor-pointer">
+                    <button
+                      type="submit"
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "8px",
+                        background: "rgba(201,160,48,0.12)",
+                        border: "1px solid rgba(201,160,48,0.35)",
+                        color: "var(--gold)",
+                        fontFamily: "var(--font-heading)",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        cursor: "pointer",
+                        transition: "all 0.18s ease",
+                        textTransform: "uppercase",
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = "rgba(201,160,48,0.22)";
+                        (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,160,48,0.6)";
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = "rgba(201,160,48,0.12)";
+                        (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,160,48,0.35)";
+                      }}
+                    >
                       Logga in
                     </button>
+                    <Link
+                      to="/apply"
+                      className="btn-primary"
+                      style={{ fontSize: "11px", padding: "8px 16px" }}
+                    >
+                      Ansök
+                    </Link>
                   </form>
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-amber-400 font-bold">Inloggad som {loggedInUser}</span>
-                    <button onClick={handleLogout} className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer bg-transparent border-0">Logga ut</button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-heading)",
+                        fontSize: "12px",
+                        letterSpacing: "0.08em",
+                        color: "var(--gold)",
+                      }}
+                    >
+                      ⚔ {loggedInUser}
+                    </span>
+                    <button
+                      onClick={handleLogout}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--muted)",
+                        fontFamily: "var(--font-heading)",
+                        fontSize: "11px",
+                        letterSpacing: "0.08em",
+                        cursor: "pointer",
+                        padding: "6px 10px",
+                        borderRadius: "6px",
+                        transition: "color 0.18s",
+                        textTransform: "uppercase",
+                      }}
+                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "var(--text)")}
+                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "var(--muted)")}
+                    >
+                      Logga ut
+                    </button>
                   </div>
-                )}
-                
-                {!loggedInUser && (
-                  <button 
-                    className="inline-flex items-center justify-center gap-[10px] border-0 cursor-pointer py-2 px-4 rounded-[14px] font-extrabold bg-white/8 bg-transparent text-text-main border border-white/14 hover:bg-white/12 transition-all duration-160 hover:-translate-y-[2px]"
-                    onClick={() => alert("Get Started clicked ✅")}
-                  >
-                    Get Started
-                  </button>
                 )}
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 py-12">
+        {/* ── Main content ── */}
+        <main className="flex-1" style={{ paddingTop: "48px", paddingBottom: "64px" }}>
           <Outlet context={{ loggedInUser }} />
         </main>
 
-        <footer className="py-[18px] border-t border-stroke bg-black/45 backdrop-blur-[14px]">
-          <div className="w-[min(1100px,92%)] mx-auto flex justify-between items-center gap-3 flex-wrap">
-            <p className="text-muted m-0">© {new Date().getFullYear()} RFR. All rights reserved.</p>
-            <div className="flex gap-[15px]">
-              <a href="#" className="no-underline text-sm text-muted hover:text-text-main transition-colors">Privacy</a>
-              <a href="#" className="no-underline text-sm text-muted hover:text-text-main transition-colors">Terms</a>
-              <a href="#" className="no-underline text-sm text-muted hover:text-text-main transition-colors">Instagram</a>
+        {/* ── Footer ── */}
+        <footer
+          style={{
+            borderTop: "1px solid rgba(201,160,48,0.15)",
+            background: "rgba(7,5,10,0.7)",
+            backdropFilter: "blur(18px)",
+            padding: "20px 0",
+          }}
+        >
+          <div
+            className="mx-auto flex justify-between items-center gap-4 flex-wrap"
+            style={{ maxWidth: "var(--container)", padding: "0 5%" }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-heading)",
+                fontSize: "11px",
+                letterSpacing: "0.1em",
+                color: "var(--muted)",
+                textTransform: "uppercase",
+              }}
+            >
+              © {new Date().getFullYear()} Roll for Roleplay
+            </p>
+            <div style={{ display: "flex", gap: "20px" }}>
+              {["Privacy", "Terms", "Instagram"].map(link => (
+                <a
+                  key={link}
+                  href="#"
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: "11px",
+                    letterSpacing: "0.08em",
+                    textDecoration: "none",
+                    color: "var(--muted)",
+                    textTransform: "uppercase",
+                    transition: "color 0.18s",
+                  }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "var(--muted)")}
+                >
+                  {link}
+                </a>
+              ))}
             </div>
           </div>
         </footer>
@@ -138,4 +338,3 @@ export default function Layout() {
     </>
   );
 }
-

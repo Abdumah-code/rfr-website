@@ -8,56 +8,220 @@ function formatDate(iso: string) {
 
 export default function Adventures() {
   return (
-    <section className="w-[min(1100px,92%)] mx-auto">
-      <h1 className="text-[clamp(34px,4.3vw,58px)] leading-[1.05] m-0 mb-4 font-bold">
-        Upcoming Adventures
-      </h1>
-      <p className="text-muted leading-[1.6] mb-4">
-        Tryck "Intresserad" för att anmäla intresse. Fullt = låst.
-      </p>
+    <div style={{ maxWidth: "var(--container)", margin: "0 auto", padding: "0 5%" }}>
+      {/* Header */}
+      <div style={{ marginBottom: "40px", animation: "slideInUp 0.55s ease-out both" }}>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            fontFamily: "var(--font-heading)",
+            fontSize: "11px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--gold)",
+            marginBottom: "16px",
+            padding: "5px 14px",
+            borderRadius: "100px",
+            border: "1px solid rgba(201,160,48,0.22)",
+            background: "rgba(201,160,48,0.05)",
+          }}
+        >
+          <span>🗺</span> Kommande äventyr
+        </div>
+        <h1
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "clamp(30px, 4.5vw, 52px)",
+            fontWeight: 900,
+            letterSpacing: "0.05em",
+            color: "var(--text)",
+            margin: "0 0 10px",
+          }}
+        >
+          Upcoming Adventures
+        </h1>
+        <p style={{ color: "var(--muted)", margin: 0, fontSize: "17px" }}>
+          Tryck "Intresserad" för att anmäla intresse. Fullt = låst.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-12 gap-4 mt-4">
-        {adventuresData.map((a) => {
+      {/* Cards grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+          gap: "22px",
+          animation: "slideInUp 0.65s ease-out 0.1s both",
+        }}
+      >
+        {adventuresData.map((a, i) => {
           const full = a.spotsLeft <= 0;
-          const interestText = full ? "Fullt" : `Intresserad (${a.spotsLeft} kvar)`;
+          const spotsPercent = Math.round(((a.maxPlayers - a.spotsLeft) / a.maxPlayers) * 100);
 
           return (
-            <article key={a.id} className="col-span-12 md:col-span-6 p-5 rounded-[18px] bg-card border border-stroke backdrop-blur-[12px] shadow-[0_18px_60px_rgba(0,0,0,0.55)]">
-              <div className="flex items-start justify-between gap-4">
-                <h2 className="m-0 text-[22px] font-bold">{a.title}</h2>
-                <div className="text-xs font-black py-[6px] px-[10px] rounded-full bg-white/10 border border-white/14">
+            <article
+              key={a.id}
+              className="rfr-card"
+              style={{
+                padding: "28px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0",
+                animationDelay: `${i * 0.08}s`,
+                animation: "slideInUp 0.5s ease-out both",
+              }}
+            >
+              {/* Title row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "18px" }}>
+                <h2
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: "19px",
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                    color: "var(--text)",
+                    margin: 0,
+                    lineHeight: 1.3,
+                    flex: 1,
+                  }}
+                >
+                  {a.title}
+                </h2>
+                <div
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    padding: "5px 10px",
+                    borderRadius: "100px",
+                    background: "rgba(201,160,48,0.1)",
+                    border: "1px solid rgba(201,160,48,0.3)",
+                    color: "var(--gold)",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
+                >
                   {a.language}
                 </div>
               </div>
 
-              <div className="mt-3 grid gap-[6px] text-muted">
-                <div><strong>Datum:</strong> {formatDate(a.date)} {a.time}</div>
-                <div><strong>DM:</strong> {a.dm}</div>
-                <div><strong>Plats:</strong> {a.location}</div>
-                <div><strong>Max:</strong> {a.maxPlayers}</div>
+              {/* Details */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px 20px",
+                  marginBottom: "20px",
+                }}
+              >
+                {[
+                  { label: "Datum", value: `${formatDate(a.date)} · ${a.time}` },
+                  { label: "DM", value: a.dm },
+                  { label: "Plats", value: a.location },
+                  { label: "Max spelare", value: String(a.maxPlayers) },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-heading)",
+                        fontSize: "9px",
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "var(--gold)",
+                        marginBottom: "3px",
+                        opacity: 0.8,
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div style={{ color: "var(--muted)", fontSize: "15px" }}>{value}</div>
+                  </div>
+                ))}
               </div>
 
-              <div className="mt-4 flex gap-[10px] flex-wrap">
-                <a 
+              {/* Spots bar */}
+              <div style={{ marginBottom: "22px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "6px",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontSize: "9px",
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      color: full ? "#E05555" : "var(--gold)",
+                      opacity: 0.8,
+                    }}
+                  >
+                    {full ? "Fullt" : `${a.spotsLeft} platser kvar`}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontSize: "9px",
+                      color: "var(--muted)",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    {a.maxPlayers - a.spotsLeft}/{a.maxPlayers}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    height: "4px",
+                    borderRadius: "2px",
+                    background: "rgba(255,255,255,0.07)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${spotsPercent}%`,
+                      borderRadius: "2px",
+                      background: full
+                        ? "linear-gradient(90deg, #7C1C2E, #A82840)"
+                        : "linear-gradient(90deg, var(--gold), var(--gold-light))",
+                      transition: "width 0.5s ease",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "auto" }}>
+                <a
                   href={full ? "#" : a.interestUrl}
                   target={full ? undefined : "_blank"}
                   rel="noreferrer"
-                  className={`inline-flex items-center justify-center gap-[10px] border-0 py-3 px-4 rounded-[14px] font-extrabold transition-all duration-160 no-underline ${
-                    full 
-                      ? "opacity-55 pointer-events-none cursor-not-allowed bg-white/92 text-black/92" 
-                      : "bg-white/92 text-black/92 hover:-translate-y-[2px] cursor-pointer"
-                  }`}
-                  onClick={(e) => {
-                    if (full) e.preventDefault();
+                  className={full ? "btn-secondary" : "btn-primary"}
+                  style={{
+                    fontSize: "11px",
+                    opacity: full ? 0.45 : 1,
+                    pointerEvents: full ? "none" : "auto",
+                    cursor: full ? "not-allowed" : "pointer",
+                    flex: 1,
+                    justifyContent: "center",
                   }}
+                  onClick={e => { if (full) e.preventDefault(); }}
                   aria-disabled={full}
                 >
-                  {interestText}
+                  {full ? "Fullt" : `Intresserad (${a.spotsLeft} kvar)`}
                 </a>
 
-                <Link 
+                <Link
                   to={`/feedback?adventure=${a.id}`}
-                  className="inline-flex items-center justify-center gap-[10px] border-0 cursor-pointer py-3 px-4 rounded-[14px] font-extrabold bg-white/8 text-text-main border border-white/14 transition-all duration-160 no-underline hover:bg-white/12 hover:-translate-y-[2px]"
+                  className="btn-secondary"
+                  style={{ fontSize: "11px", flexShrink: 0 }}
                 >
                   Feedback
                 </Link>
@@ -66,6 +230,25 @@ export default function Adventures() {
           );
         })}
       </div>
-    </section>
+
+      {adventuresData.length === 0 && (
+        <div
+          className="rfr-card"
+          style={{ padding: "48px", textAlign: "center", marginTop: "20px" }}
+        >
+          <div style={{ fontSize: "48px", marginBottom: "16px", opacity: 0.4 }}>🎲</div>
+          <p
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "16px",
+              letterSpacing: "0.06em",
+              color: "var(--muted)",
+            }}
+          >
+            Inga äventyr just nu — kolla tillbaka snart.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
