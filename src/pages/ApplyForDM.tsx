@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useOutletContext, useNavigate } from "react-router-dom";
+import { Settings, X } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 // ─── Shared sub-components ──────────────────────────────────────────────────
 
@@ -79,6 +82,37 @@ function PillGroup({
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function ApplyForDM() {
+  const { isSuperAdmin, loggedInUser, isAuthLoading } = useOutletContext<{ isSuperAdmin: boolean; loggedInUser: string | null; isAuthLoading: boolean }>();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthLoading && loggedInUser) {
+      navigate("/");
+    }
+  }, [loggedInUser, isAuthLoading, navigate]);
+
+  if (isAuthLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh", fontFamily: "var(--font-heading)", color: "var(--gold)", letterSpacing: "0.1em" }}>
+        Laddar...
+      </div>
+    );
+  }
+
+  // Header text states
+  const [headerContent, setHeaderContent] = useState(() => {
+    const saved = localStorage.getItem("rfr_apply_header");
+    return saved ? JSON.parse(saved) : {
+      eyebrow: "📝 Bli Spelledare",
+      title: "Ansök som spelledare (DM)",
+      description: "Vill du bli en del av RFR DM-team? Fyll i ansökan nedan!"
+    };
+  });
+  const [editingHeaderField, setEditingHeaderField] = useState<{
+    key: "eyebrow" | "title" | "description";
+    value: string;
+  } | null>(null);
+
   const [step, setStep] = useState<"form" | "summary">("form");
   const [formData, setFormData] = useState({
     name: "",
@@ -149,7 +183,7 @@ export default function ApplyForDM() {
     if (!formData.gameTone) e.gameTone = "Välj ton";
     if (!formData.ruleStrictness) e.ruleStrictness = "Välj regelstriktness";
     if (!formData.conflictHandling.trim()) e.conflictHandling = "Beskriv hur du hanterar konflikter";
-    if (!formData.presentation.trim()) e.presentation = "Bion är obligatorisk";
+    if (!formData.presentation.trim()) e.presentation = "Presentationen är obligatorisk";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -175,7 +209,7 @@ export default function ApplyForDM() {
     const e: Record<string, string> = {};
     if (!formData.contactMethod) e.contactMethod = "Välj hur du vill bli kontaktad";
     if (formData.contactMethod === "Discord" && !formData.contactDiscord.trim()) e.contactDiscord = "Ange ditt Discord-namn";
-    if (formData.contactMethod === "E-post" && !formData.contactEmail.trim()) e.contactEmail = "Ange din e-postadress";
+    if (formData.contactMethod === "E-post" && !formData.contactEmail.trim()) e.contactEmail = "Ange din e-postadresse";
     if (formData.contactMethod === "Telefon" && !formData.contactPhone.trim()) e.contactPhone = "Ange ditt telefonnummer";
     if (!formData.consentGiven) e.consentGiven = "Samtycke krävs för att skicka ansökan";
     if (Object.keys(e).length > 0) {
@@ -216,7 +250,7 @@ export default function ApplyForDM() {
           >
             Tack för din ansökan!
           </h1>
-          <p style={{ color: "var(--muted)", margin: 0 }}>Vi kollar igenom den och hör av oss snart!</p>
+          <p style={{ color: "var(--muted)", margin: 0 }}>Vi går igenom den och hör av oss till dig inom kort!</p>
         </div>
       </div>
     );
@@ -404,10 +438,10 @@ export default function ApplyForDM() {
               onClick={() => { setStep("form"); window.scrollTo(0, 0); }}
               style={{ fontSize: "11px" }}
             >
-              ← Tillbaka &amp; Redigera
+              ← Gå tillbaka &amp; redigera
             </button>
             <button className="btn-primary" onClick={handleFinalSubmit} style={{ fontSize: "12px" }}>
-              📝 &nbsp;Skicka ansökan
+              📝 &nbsp;Skicka in ansökan
             </button>
           </div>
         </div>
@@ -431,26 +465,118 @@ export default function ApplyForDM() {
           marginBottom: "28px",
         }}
       >
-        <h1
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "clamp(20px, 3vw, 28px)",
-            fontWeight: 900,
-            letterSpacing: "0.06em",
-            color: "var(--gold)",
-            margin: "0 0 4px",
-          }}
-        >
-          Apply for DM
-        </h1>
-        <p style={{ margin: 0, color: "var(--muted)", fontSize: "15px" }}>
-          Vill du bli en del av RFR DM Team? Fyll i ansökan nedan!
-        </p>
+        {headerContent.eyebrow && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              fontFamily: "var(--font-heading)",
+              fontSize: "11px",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "var(--gold)",
+              marginBottom: "12px",
+              padding: "5px 14px",
+              borderRadius: "100px",
+              border: "1px solid rgba(201,160,48,0.22)",
+              background: "rgba(201,160,48,0.05)",
+              position: "relative",
+            }}
+          >
+            {headerContent.eyebrow}
+            {isSuperAdmin && (
+              <button
+                onClick={() => setEditingHeaderField({ key: "eyebrow", value: headerContent.eyebrow })}
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  right: "-26px",
+                  background: "#0b0811",
+                  border: "1px solid rgba(201,160,48,0.2)",
+                  borderRadius: "50%",
+                  padding: "3px",
+                  cursor: "pointer",
+                  color: "var(--gold)",
+                  zIndex: 10,
+                }}
+                className="hover:border-gold hover:scale-105 transition-all"
+                title="Redigera ögonbryn"
+              >
+                <Settings className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
+
+        <div>
+          <div style={{ position: "relative", marginBottom: "4px", display: "inline-block" }}>
+            <h1
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: "clamp(20px, 3vw, 28px)",
+                fontWeight: 900,
+                letterSpacing: "0.06em",
+                color: "var(--gold)",
+                margin: 0,
+              }}
+            >
+              {headerContent.title}
+            </h1>
+            {isSuperAdmin && (
+              <button
+                onClick={() => setEditingHeaderField({ key: "title", value: headerContent.title })}
+                style={{
+                  position: "absolute",
+                  top: "0px",
+                  right: "-28px",
+                  background: "#0b0811",
+                  border: "1px solid rgba(201,160,48,0.2)",
+                  borderRadius: "50%",
+                  padding: "3px",
+                  cursor: "pointer",
+                  color: "var(--gold)",
+                  zIndex: 10,
+                }}
+                className="hover:border-gold hover:scale-105 transition-all"
+                title="Redigera rubrik"
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <p style={{ margin: 0, color: "var(--muted)", fontSize: "15px" }}>
+            {headerContent.description}
+          </p>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setEditingHeaderField({ key: "description", value: headerContent.description })}
+              style={{
+                position: "absolute",
+                top: "-3px",
+                right: "-26px",
+                background: "#0b0811",
+                border: "1px solid rgba(201,160,48,0.2)",
+                borderRadius: "50%",
+                padding: "3px",
+                cursor: "pointer",
+                color: "var(--gold)",
+                zIndex: 10,
+              }}
+              className="hover:border-gold hover:scale-105 transition-all"
+              title="Redigera beskrivning"
+            >
+              <Settings className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gap: "18px" }}>
         {/* Grundinfo */}
-        <SectionCard icon="🌍" title="Grundinfo">
+        <SectionCard icon="🌍" title="Grundläggande information">
           <FieldGroup label="Namn *" error={errors.name}>
             <input className={`rfr-input${errors.name ? " error" : ""}`} type="text" value={formData.name} onChange={e => set("name", e.target.value)} />
           </FieldGroup>
@@ -470,7 +596,7 @@ export default function ApplyForDM() {
         </SectionCard>
 
         {/* Erfarenhet */}
-        <SectionCard icon="🎲" title="Erfarenhet som DM">
+        <SectionCard icon="🎲" title="Erfarenhet som spelledare">
           <FieldGroup label="Hur länge har du varit spelledare? *" error={errors.experienceTime}>
             <input className={`rfr-input${errors.experienceTime ? " error" : ""}`} type="text" value={formData.experienceTime} onChange={e => set("experienceTime", e.target.value)} />
           </FieldGroup>
@@ -481,36 +607,36 @@ export default function ApplyForDM() {
             )}
             {errors.otherSystem && <div className="rfr-error">{errors.otherSystem}</div>}
           </FieldGroup>
-          <FieldGroup label="Hur många sessions har du ungefär hållit? *" error={errors.sessionCount}>
+          <FieldGroup label="Hur många spelpass har du ungefär lett? *" error={errors.sessionCount}>
             <input className={`rfr-input${errors.sessionCount ? " error" : ""}`} type="text" value={formData.sessionCount} onChange={e => set("sessionCount", e.target.value)} />
           </FieldGroup>
         </SectionCard>
 
         {/* Spelstil */}
         <SectionCard icon="🎭" title="Din spelstil">
-          <FieldGroup label="Hur skulle du beskriva din stil? (flerval) *" error={errors.playStyle}>
-            <PillGroup multi options={["🎭 Roleplay-fokuserad", "⚔️ Combat-fokuserad", "🧠 Story & narrativ", "🧩 Pussel & exploration", "🎲 Casual / humor", "🧟 Dark / serious"]} selected={formData.playStyle} onToggle={v => toggle("playStyle", v)} />
+          <FieldGroup label="Hur skulle du beskriva din spelstil? (flervalsval) *" error={errors.playStyle}>
+            <PillGroup multi options={["🎭 Roleplay-fokuserad", "⚔️ Combat-fokuserad", "🧠 Berättelse & narrativ", "🧩 Pussel & utforskning", "🎲 Avslappnad / humor", "🧟 Mörk / seriös"]} selected={formData.playStyle} onToggle={v => toggle("playStyle", v)} />
           </FieldGroup>
-          <FieldGroup label="Hur balanserar du RP vs combat? *" error={errors.balance}>
-            <PillGroup options={["Mest RP", "Mix", "Mest combat"]} selected={formData.balance} onToggle={v => set("balance", v)} />
+          <FieldGroup label="Hur balanserar du rollspel (RP) vs strid (combat)? *" error={errors.balance}>
+            <PillGroup options={["Mest rollspel", "Blandat", "Mest strid"]} selected={formData.balance} onToggle={v => set("balance", v)} />
           </FieldGroup>
         </SectionCard>
 
         {/* Hur du spelar */}
-        <SectionCard icon="🗺️" title="Hur du spelar">
-          <FieldGroup label="Vilka format kan du köra? *" error={errors.format}>
-            <PillGroup options={["Online", "IRL", "Båda"]} selected={formData.format} onToggle={v => set("format", v)} />
-            {(formData.format === "IRL" || formData.format === "Båda") && (
+        <SectionCard icon="🗺️" title="Hur du spelleder">
+          <FieldGroup label="Vilka format kan du spelleda i? *" error={errors.format}>
+            <PillGroup options={["Online", "På plats (IRL)", "Båda"]} selected={formData.format} onToggle={v => set("format", v)} />
+            {(formData.format === "På plats (IRL)" || formData.format === "Båda") && (
               <div style={{ marginTop: "10px" }}>
-                <input className={`rfr-input${errors.irlContent ? " error" : ""}`} type="text" placeholder="Om IRL, vilken stad/område? *" value={formData.irlContent} onChange={e => set("irlContent", e.target.value)} />
+                <input className={`rfr-input${errors.irlContent ? " error" : ""}`} type="text" placeholder="Om på plats (IRL), vilken stad/vilket område? *" value={formData.irlContent} onChange={e => set("irlContent", e.target.value)} />
                 {errors.irlContent && <div className="rfr-error">{errors.irlContent}</div>}
               </div>
             )}
           </FieldGroup>
           <FieldGroup label="Hur presenterar du spelet visuellt? *" error={errors.visuals}>
-            <PillGroup multi options={["Theater of the Mind", "Battlemap (digital)", "Minis & terräng (IRL)", "Mix"]} selected={formData.visuals} onToggle={v => toggle("visuals", v)} />
+            <PillGroup multi options={["Theater of the Mind (berättande)", "Digital battlemap (t.ex. VTT)", "Figurer & terräng (på plats)", "Mix"]} selected={formData.visuals} onToggle={v => toggle("visuals", v)} />
           </FieldGroup>
-          <FieldGroup label="Vilka verktyg använder du? (valfri)">
+          <FieldGroup label="Vilka verktyg använder du? (valfritt)">
             <PillGroup multi options={["Roll20", "Foundry", "Discord", "D&D Beyond", "Annat"]} selected={formData.tools} onToggle={v => toggle("tools", v)} />
             {formData.tools.includes("Annat") && (
               <input className="rfr-input" type="text" placeholder="Vilka andra verktyg?" style={{ marginTop: "10px" }} value={formData.otherTool} onChange={e => set("otherTool", e.target.value)} />
@@ -523,14 +649,14 @@ export default function ApplyForDM() {
           <FieldGroup label="Vilka typer av sessions erbjuder du? *" error={errors.sessionType}>
             <PillGroup options={["One-shots", "Kampanjer", "Båda"]} selected={formData.sessionType} onToggle={v => set("sessionType", v)} />
           </FieldGroup>
-          <FieldGroup label="Hur långa är dina sessions? *" error={errors.sessionLength}>
-            <input className={`rfr-input${errors.sessionLength ? " error" : ""}`} type="text" placeholder="T.ex. 3-4 timmar" value={formData.sessionLength} onChange={e => set("sessionLength", e.target.value)} />
+          <FieldGroup label="Hur långa är dina spelpass i genomsnitt? *" error={errors.sessionLength}>
+            <input className={`rfr-input${errors.sessionLength ? " error" : ""}`} type="text" placeholder="T.ex. 3–4 timmar" value={formData.sessionLength} onChange={e => set("sessionLength", e.target.value)} />
           </FieldGroup>
         </SectionCard>
 
         {/* Betalning */}
-        <SectionCard icon="💰" title="Betalning">
-          <FieldGroup label="Vill du ta betalt? *" error={errors.wantsPayment}>
+        <SectionCard icon="💰" title="Betalning &amp; Pris">
+          <FieldGroup label="Vill du ta betalt för att spelleda? *" error={errors.wantsPayment}>
             <PillGroup options={["Ja", "Nej", "Ibland"]} selected={formData.wantsPayment} onToggle={v => set("wantsPayment", v)} />
             {(formData.wantsPayment === "Ja" || formData.wantsPayment === "Ibland") && (
               <div style={{ marginTop: "10px" }}>
@@ -539,38 +665,38 @@ export default function ApplyForDM() {
               </div>
             )}
           </FieldGroup>
-          <FieldGroup label="Är du öppen för gratis prova-på sessioner? *" error={errors.freeTrial}>
+          <FieldGroup label="Är du öppen för en gratis prova-på-session? *" error={errors.freeTrial}>
             <PillGroup options={["Ja", "Nej"]} selected={formData.freeTrial} onToggle={v => set("freeTrial", v)} />
           </FieldGroup>
         </SectionCard>
 
         {/* Tillgänglighet */}
         <SectionCard icon="🌟" title="Tillgänglighet">
-          <FieldGroup label="När spelar du oftast? *" error={errors.playTimes}>
-            <PillGroup multi options={["Vardagar kväll", "Helger", "Flexibel"]} selected={formData.playTimes} onToggle={v => toggle("playTimes", v)} />
+          <FieldGroup label="När kan du oftast spela? *" error={errors.playTimes}>
+            <PillGroup multi options={["Vardagskvällar", "Helger", "Flexibel"]} selected={formData.playTimes} onToggle={v => toggle("playTimes", v)} />
           </FieldGroup>
-          <FieldGroup label="Hur ofta vill du hålla sessions? *" error={errors.frequency}>
-            <PillGroup options={["1 gång / vecka", "2–3 gånger / vecka", "1 gång per månad"]} selected={formData.frequency} onToggle={v => set("frequency", v)} />
+          <FieldGroup label="Hur ofta vill du hålla spelpass? *" error={errors.frequency}>
+            <PillGroup options={["1 gång i veckan", "2–3 gånger i veckan", "1 gång i månaden"]} selected={formData.frequency} onToggle={v => set("frequency", v)} />
           </FieldGroup>
         </SectionCard>
 
         {/* Spelartyper */}
-        <SectionCard icon="🧑‍🤝‍🧑" title="Spelartyper & preferenser">
+        <SectionCard icon="🧑‍🤝‍🧑" title="Spelartyper &amp; preferenser">
           <FieldGroup label="Vilka spelare riktar du dig till? *" error={errors.targetPlayers}>
-            <PillGroup options={["Nybörjare", "Blandat", "Erfarna"]} selected={formData.targetPlayers} onToggle={v => set("targetPlayers", v)} />
+            <PillGroup options={["Nybörjare", "Blandade", "Erfarna"]} selected={formData.targetPlayers} onToggle={v => set("targetPlayers", v)} />
           </FieldGroup>
-          <FieldGroup label="Är du bekväm med att guida nya spelare? *" error={errors.guideNew}>
+          <FieldGroup label="Är du bekväm med att guida nybörjare? *" error={errors.guideNew}>
             <PillGroup options={["Ja", "Nej"]} selected={formData.guideNew} onToggle={v => set("guideNew", v)} />
           </FieldGroup>
-          <FieldGroup label="Vilken ton har dina spel? *" error={errors.gameTone}>
-            <PillGroup options={["Lättsam", "Seriös", "Mix"]} selected={formData.gameTone} onToggle={v => set("gameTone", v)} />
+          <FieldGroup label="Vilken ton har dina spel vanligtvis? *" error={errors.gameTone}>
+            <PillGroup options={["Lättsam", "Seriös", "Blandad"]} selected={formData.gameTone} onToggle={v => set("gameTone", v)} />
           </FieldGroup>
         </SectionCard>
 
         {/* Regler */}
-        <SectionCard icon="⚖️" title="Regler & DM-approach">
-          <FieldGroup label="Hur strikt följer du regler? *" error={errors.ruleStrictness}>
-            <PillGroup options={["Rules as Written", "Flexibel", "Rule of Cool"]} selected={formData.ruleStrictness} onToggle={v => set("ruleStrictness", v)} />
+        <SectionCard icon="⚖️" title="Regler &amp; spelledarstil">
+          <FieldGroup label="Hur strikt följer du reglerna? *" error={errors.ruleStrictness}>
+            <PillGroup options={["Rules as Written (bokstavstroget)", "Flexibel", "Rule of Cool (det häftigaste vinner)"]} selected={formData.ruleStrictness} onToggle={v => set("ruleStrictness", v)} />
           </FieldGroup>
           <FieldGroup label="Hur hanterar du konflikter vid bordet? *" error={errors.conflictHandling}>
             <textarea className={`rfr-textarea${errors.conflictHandling ? " error" : ""}`} value={formData.conflictHandling} onChange={e => set("conflictHandling", e.target.value)} placeholder="Beskriv kort din approach..." />
@@ -578,15 +704,15 @@ export default function ApplyForDM() {
         </SectionCard>
 
         {/* Presentation */}
-        <SectionCard icon="✍️" title="Presentation">
-          <FieldGroup label="Beskriv dig själv som DM (typ bio) *" error={errors.presentation}>
-            <textarea className={`rfr-textarea${errors.presentation ? " error" : ""}`} style={{ minHeight: "150px" }} value={formData.presentation} onChange={e => set("presentation", e.target.value)} placeholder="Berätta lite om dig själv! Vem är du bakom systemet, varför du är en bra DM, vad du gillar etc." />
+        <SectionCard icon="✍️" title="Presentation &amp; Bio">
+          <FieldGroup label="Beskriv dig själv som spelledare (din bio) *" error={errors.presentation}>
+            <textarea className={`rfr-textarea${errors.presentation ? " error" : ""}`} style={{ minHeight: "150px" }} value={formData.presentation} onChange={e => set("presentation", e.target.value)} placeholder="Berätta lite om dig själv! Vem är du bakom spelledarskärmen, varför är du en bra spelledare, vad gillar du att fokusera på etc." />
           </FieldGroup>
         </SectionCard>
 
         {/* Extra */}
-        <SectionCard icon="🖼️" title="Extra">
-          <FieldGroup label="Profilbild (valfri)">
+        <SectionCard icon="🖼️" title="Övrigt">
+          <FieldGroup label="Profilbild (valfritt)">
             <input
               type="file"
               accept="image/*"
@@ -612,12 +738,12 @@ export default function ApplyForDM() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
             <div>
               <div style={{ fontFamily: "var(--font-heading)", fontSize: "14px", fontWeight: 700, letterSpacing: "0.06em", color: "var(--text)", marginBottom: "4px" }}>
-                Redo att granska?
+                Redo att granska din ansökan?
               </div>
-              <div style={{ fontSize: "14px", color: "var(--muted)" }}>Se över dina svar innan du skickar.</div>
+              <div style={{ fontSize: "14px", color: "var(--muted)" }}>Se över dina svar innan du skickar in.</div>
             </div>
             <button className="btn-primary" onClick={handleProceed} style={{ fontSize: "12px", whiteSpace: "nowrap" }}>
-              Gå vidare →
+              Granska ansökan →
             </button>
           </div>
 
@@ -642,6 +768,91 @@ export default function ApplyForDM() {
           )}
         </div>
       </div>
+      
+      {/* Edit Header Modal */}
+      <AnimatePresence>
+        {editingHeaderField && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingHeaderField(null)}
+              className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="rfr-card p-6 max-w-md w-full mx-4 relative z-10 flex flex-col bg-[#0a080f] border-gold/30 shadow-[0_0_50px_rgba(201,160,48,0.15)]"
+            >
+              <div className="flex items-center justify-between mb-4 border-b border-[#2a2435] pb-3">
+                <h3 className="font-heading text-lg font-bold uppercase tracking-wider text-gold">
+                  Redigera rubrik
+                </h3>
+                <button
+                  onClick={() => setEditingHeaderField(null)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  if (editingHeaderField.value.trim()) {
+                    const updated = { ...headerContent, [editingHeaderField.key]: editingHeaderField.value.trim() };
+                    setHeaderContent(updated);
+                    localStorage.setItem("rfr_apply_header", JSON.stringify(updated));
+                    setEditingHeaderField(null);
+                  }
+                }}
+                className="flex flex-col gap-4 text-left font-body"
+              >
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1 uppercase tracking-wide">
+                    {editingHeaderField.key === "eyebrow" ? "Ögonbryn" : editingHeaderField.key === "title" ? "Titel" : "Beskrivning"}
+                  </label>
+                  {editingHeaderField.key === "description" ? (
+                    <textarea
+                      rows={4}
+                      value={editingHeaderField.value}
+                      onChange={e => setEditingHeaderField({ ...editingHeaderField, value: e.target.value })}
+                      className="w-full p-2.5 bg-[#13101a] border border-[#2a2435] rounded text-slate-200 focus:outline-none focus:border-gold transition-colors font-body resize-none"
+                      required
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={editingHeaderField.value}
+                      onChange={e => setEditingHeaderField({ ...editingHeaderField, value: e.target.value })}
+                      className="w-full p-2.5 bg-[#13101a] border border-[#2a2435] rounded text-slate-200 focus:outline-none focus:border-gold transition-colors"
+                      required
+                    />
+                  )}
+                </div>
+
+                <div className="flex gap-3 mt-4 border-t border-[#2a2435] pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditingHeaderField(null)}
+                    className="btn-secondary w-1/2 !py-3 !text-[12px]"
+                  >
+                    Avbryt
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary w-1/2 !py-3 !text-[12px] font-bold"
+                  >
+                    Spara
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

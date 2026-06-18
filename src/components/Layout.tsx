@@ -1,39 +1,90 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { getDMs } from "../utils/dms";
+import { Shield } from "lucide-react";
+import logo from "./Logo Icon Colored.png";
 
 export default function Layout() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loggedInUser, setLoggedInUser] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const location = useLocation();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanUsername = username.trim().toLowerCase();
+  useEffect(() => {
+    fetchAuthStatus();
+  }, []);
 
-    if (cleanUsername === "david" && password === "david") {
-      setLoggedInUser("David");
-      setUsername("");
-      setPassword("");
-      return;
-    }
-
-    const dms = getDMs();
-    const dm = dms.find(d => d.username === cleanUsername && d.password === password);
-    if (dm) {
-      setLoggedInUser(dm.name);
-      setUsername("");
-      setPassword("");
-    } else {
-      alert("Fel användarnamn eller lösenord");
+  const fetchAuthStatus = async () => {
+    try {
+      const res = await fetch('/api/auth-status');
+      const data = await res.json();
+      if (data.success && data.user) {
+        setLoggedInUser(data.user.username);
+        setUserId(data.user.id);
+        setIsSuperAdmin(!!data.user.isSuperAdmin);
+      } else {
+        setLoggedInUser(null);
+        setUserId(null);
+        setIsSuperAdmin(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAuthLoading(false);
     }
   };
 
-  const handleLogout = () => setLoggedInUser(null);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !password) {
+      alert("Användarnamn och lösenord krävs.");
+      return;
+    }
+    try {
+      const res = await fetch('/api/user-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setUsername("");
+        setPassword("");
+        await fetchAuthStatus();
+      } else {
+        alert(data.message || "Fel användarnamn eller lösenord");
+      }
+    } catch (err) {
+      alert("Anslutningsfel.");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      setLoggedInUser(null);
+      setUserId(null);
+      setIsSuperAdmin(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleLeaveTavern = async () => {
+    try {
+      await fetch('/api/site-logout', { method: 'POST' });
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  // isSuperAdmin is now state-driven
 
   return (
     <>
@@ -61,29 +112,14 @@ export default function Layout() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
                 textDecoration: "none",
               }}
             >
-              {/* Try to load the logo image; fallback to SVG emblem */}
               <img
-                src="/logo.png"
-                alt="RFR"
-                style={{ height: "36px", width: "36px", objectFit: "contain" }}
-                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                src={logo}
+                alt="Role for Roleplay"
+                style={{ height: "208px", width: "208px", objectFit: "contain" }}
               />
-              <span
-                style={{
-                  fontFamily: "var(--font-heading)",
-                  fontWeight: 900,
-                  fontSize: "18px",
-                  letterSpacing: "0.2em",
-                  color: "var(--gold)",
-                  textShadow: "0 0 20px rgba(201,160,48,0.4)",
-                }}
-              >
-                RFR
-              </span>
             </Link>
 
             {/* Nav + Auth */}
@@ -91,21 +127,23 @@ export default function Layout() {
               {/* Navigation links */}
               <nav className="flex items-center gap-1">
                 {[
-                  { to: "/", label: "Home" },
-                  { to: "/adventures", label: "Adventures" },
+                  { to: "/", label: "Hem" },
+                  { to: "/adventures", label: "Äventyr" },
+                  { to: "/gamemasters", label: "Spelledare" },
+                  { to: "/contact", label: "Kontakt" },
                   ...(!loggedInUser
                     ? [
-                        { to: "/apply", label: "Apply for DM" },
+                        { to: "/apply", label: "Bli spelledare" },
                         { to: "/feedback", label: "Feedback" },
                       ]
                     : []),
                   ...(loggedInUser
                     ? [
-                        { to: "/mail", label: "Mail", gold: true },
-                        { to: "/settings", label: "Settings", gold: true },
+                        { to: "/mail", label: "Inkorg", gold: true },
+                        { to: "/settings", label: "Inställningar", gold: true },
                       ]
                     : []),
-                  ...(loggedInUser === "David"
+                  ...(isSuperAdmin
                     ? [{ to: "/admin", label: "Admin", gold: true }]
                     : []),
                 ].map(({ to, label, gold }) => (
@@ -159,7 +197,7 @@ export default function Layout() {
                   alignItems: "center",
                   gap: "10px",
                   paddingLeft: "16px",
-                  borderLeft: "1px solid rgba(201,160,48,0.15)",
+                  borderLeft: "1px solid rgba(201, 160, 48, 0.15)",
                 }}
               >
                 {!loggedInUser ? (
@@ -248,31 +286,39 @@ export default function Layout() {
                       style={{
                         fontFamily: "var(--font-heading)",
                         fontSize: "12px",
-                        letterSpacing: "0.08em",
-                        color: "var(--gold)",
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                        color: "var(--gold-light)",
                       }}
                     >
-                      ⚔ {loggedInUser}
+                      Hej, {loggedInUser} {isSuperAdmin ? "(Superadmin)" : "(Spelledare)"}
                     </span>
                     <button
                       onClick={handleLogout}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--muted)",
-                        fontFamily: "var(--font-heading)",
-                        fontSize: "11px",
-                        letterSpacing: "0.08em",
-                        cursor: "pointer",
-                        padding: "6px 10px",
-                        borderRadius: "6px",
-                        transition: "color 0.18s",
-                        textTransform: "uppercase",
-                      }}
-                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "var(--text)")}
-                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "var(--muted)")}
+                      className="btn-secondary"
+                      style={{ fontSize: "10px", padding: "6px 12px" }}
                     >
-                      Logga ut
+                      Res dig upp
+                    </button>
+                    <button
+                      onClick={handleLeaveTavern}
+                      className="btn-secondary"
+                      style={{
+                        fontSize: "10px",
+                        padding: "6px 12px",
+                        borderColor: "rgba(168,40,64,0.3)",
+                        color: "#A82840"
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = "rgba(124,28,46,0.1)";
+                        (e.currentTarget as HTMLElement).style.borderColor = "rgba(168,40,64,0.5)";
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = "transparent";
+                        (e.currentTarget as HTMLElement).style.borderColor = "rgba(168,40,64,0.3)";
+                      }}
+                    >
+                      Lämna tavernan
                     </button>
                   </div>
                 )}
@@ -281,59 +327,10 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* ── Main content ── */}
-        <main className="flex-1" style={{ paddingTop: "48px", paddingBottom: "64px" }}>
-          <Outlet context={{ loggedInUser }} />
+        {/* ── Main Content ── */}
+        <main className="flex-1 py-10">
+          <Outlet context={{ loggedInUser, userId, isSuperAdmin, fetchAuthStatus, isAuthLoading }} />
         </main>
-
-        {/* ── Footer ── */}
-        <footer
-          style={{
-            borderTop: "1px solid rgba(201,160,48,0.15)",
-            background: "rgba(7,5,10,0.7)",
-            backdropFilter: "blur(18px)",
-            padding: "20px 0",
-          }}
-        >
-          <div
-            className="mx-auto flex justify-between items-center gap-4 flex-wrap"
-            style={{ maxWidth: "var(--container)", padding: "0 5%" }}
-          >
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-heading)",
-                fontSize: "11px",
-                letterSpacing: "0.1em",
-                color: "var(--muted)",
-                textTransform: "uppercase",
-              }}
-            >
-              © {new Date().getFullYear()} Roll for Roleplay
-            </p>
-            <div style={{ display: "flex", gap: "20px" }}>
-              {["Privacy", "Terms", "Instagram"].map(link => (
-                <a
-                  key={link}
-                  href="#"
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "11px",
-                    letterSpacing: "0.08em",
-                    textDecoration: "none",
-                    color: "var(--muted)",
-                    textTransform: "uppercase",
-                    transition: "color 0.18s",
-                  }}
-                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
-                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "var(--muted)")}
-                >
-                  {link}
-                </a>
-              ))}
-            </div>
-          </div>
-        </footer>
       </div>
     </>
   );

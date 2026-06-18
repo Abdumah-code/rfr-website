@@ -30,22 +30,24 @@ export default function Mail() {
   const [selected, setSelected] = useState<FeedbackSubmission | null>(null);
 
   useEffect(() => {
+    if (!loggedInUser) return;
     const stored = JSON.parse(localStorage.getItem('rfr_feedbacks') || '[]');
-    const dmFeedbacks = stored.filter((f: FeedbackSubmission) => f.dmName === loggedInUser);
+    // Filters by loggedInUser username (stored in lowercase in the database/session)
+    const dmFeedbacks = stored.filter((f: FeedbackSubmission) => f.dmName?.toLowerCase() === loggedInUser.toLowerCase());
     setFeedbacks(dmFeedbacks);
   }, [loggedInUser]);
 
   return (
     <section className="w-[min(1100px,92%)] mx-auto pb-12">
       <h1 className="text-[clamp(34px,4.3vw,58px)] leading-[1.05] m-0 mb-4 font-bold">
-        Mail
+        Inkorg
       </h1>
       
       <div className="rounded-[18px] bg-card border border-stroke backdrop-blur-[12px] shadow-[0_18px_60px_rgba(0,0,0,0.55)] overflow-hidden flex min-h-[600px] max-h-[80vh]">
         {/* Sidebar / List */}
         <div className={`w-full md:w-1/3 border-r border-stroke flex-col ${selected ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b border-stroke bg-black/20">
-            <h2 className="text-lg font-bold m-0">Inkorg ({feedbacks.length})</h2>
+            <h2 className="text-lg font-bold m-0">Meddelanden ({feedbacks.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto">
             {feedbacks.length === 0 ? (
@@ -60,7 +62,7 @@ export default function Mail() {
                   className={`p-4 border-b border-stroke cursor-pointer transition-colors hover:bg-white/5 ${selected?.id === f.id ? 'bg-white/10' : ''}`}
                 >
                   <div className="font-bold truncate">{f.playerEmail}</div>
-                  <div className="text-sm text-amber-400 truncate">{f.adventureTitle || 'Generell Feedback'}</div>
+                  <div className="text-sm text-amber-400 truncate">{f.adventureTitle || 'Allmän Feedback'}</div>
                   <div className="text-xs text-muted mt-2">
                     {new Date(f.date).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
@@ -91,7 +93,7 @@ export default function Mail() {
                   onClick={() => setSelected(null)}
                   className="md:hidden px-3 py-1.5 rounded-lg bg-white/10 text-sm hover:bg-white/20 transition-colors border-0 cursor-pointer text-white"
                 >
-                  Tillbaka
+                  Gå tillbaka
                 </button>
               </div>
 
@@ -131,13 +133,13 @@ export default function Mail() {
                     )}
                     {selected.feedback.dmStrengths && (
                       <div>
-                        <div className="text-sm font-bold text-muted mb-1">DM gjorde bra:</div>
+                        <div className="text-sm font-bold text-muted mb-1">Spelledaren gjorde bra:</div>
                         <div className="bg-black/20 p-4 rounded-xl border border-stroke whitespace-pre-wrap text-[15px] leading-relaxed">{selected.feedback.dmStrengths}</div>
                       </div>
                     )}
                     {selected.feedback.improvements && (
                       <div>
-                        <div className="text-sm font-bold text-muted mb-1">Skulle vilja ha annorlunda:</div>
+                        <div className="text-sm font-bold text-muted mb-1">Önskas annorlunda:</div>
                         <div className="bg-black/20 p-4 rounded-xl border border-stroke whitespace-pre-wrap text-[15px] leading-relaxed">{selected.feedback.improvements}</div>
                       </div>
                     )}
@@ -157,7 +159,7 @@ export default function Mail() {
                       <div className="font-bold">{selected.feedback.futureInvite}</div>
                     </div>
                     <div className="bg-black/20 p-4 rounded-xl border border-stroke">
-                      <div className="text-sm text-muted mb-1">Info om framtida äventyr?</div>
+                      <div className="text-sm text-muted mb-1">Info om kommande äventyr?</div>
                       <div className="font-bold">{selected.feedback.futureInfo}</div>
                     </div>
                   </div>
@@ -176,4 +178,3 @@ export default function Mail() {
     </section>
   );
 }
-
