@@ -24,6 +24,6 @@ export const adventuresData: Adventure[] = [
     spotsLeft: 2,
     location: "Norrköping / Online",
     interestUrl: "https://forms.gle/YOUR_INTEREST_FORM",
-    feedbackUrl: "https://forms.gle/YOUR_FEEDBACK_FORM"
+    feedbackUrl: "/feedback?adventure=wolves-of-vargheim"
   }
 ];

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { getDMs, saveDMs, DMUser } from "../utils/dms";
 import { useOutletContext, useNavigate } from "react-router-dom";
 
 export default function Settings() {
-  const { loggedInUser } = useOutletContext<{ loggedInUser: string | null }>();
+  const { loggedInUser, userId } = useOutletContext<{ loggedInUser: string | null; userId: number | null }>();
   const navigate = useNavigate();
   
   const [currentPassword, setCurrentPassword] = useState("");
@@ -18,7 +17,7 @@ export default function Settings() {
     }
   }, [loggedInUser, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
     setError("");
@@ -33,37 +32,47 @@ export default function Settings() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError("Lösenordet måste vara minst 6 tecken.");
+    if (newPassword.length < 4) {
+      setError("Lösenordet måste vara minst 4 tecken.");
       return;
     }
 
-    // "David" shouldn't change password here as he uses hardcoded right now,
-    // but the system has David logic elsewhere. If it's David, just show error.
-    if (loggedInUser === "David") {
-      setError("Adminlösenord kan inte ändras här.");
+    if (loggedInUser?.toLowerCase() === "david") {
+      setError("Lösenordet för superadminkontot kan inte ändras här.");
       return;
     }
 
-    const dms = getDMs();
-    const dmIndex = dms.findIndex(d => d.name === loggedInUser);
-    
-    if (dmIndex === -1) {
-      setError("Kunde inte hitta användaren.");
-      return;
-    }
+    try {
+      // 1. Verify current password by making a login call
+      const verifyRes = await fetch('/api/user-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loggedInUser, password: currentPassword }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        setError("Nuvarande lösenord är felaktigt.");
+        return;
+      }
 
-    if (dms[dmIndex].password !== currentPassword) {
-      setError("Nuvarande lösenord är fel.");
-      return;
+      // 2. Perform the update via PUT /api/users/:id
+      const updateRes = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      });
+      const updateData = await updateRes.json();
+      if (updateRes.ok && updateData.success) {
+        setMessage("Ditt lösenord har uppdaterats framgångsrikt!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        setError(updateData.message || "Det gick inte att uppdatera lösenordet.");
+      }
+    } catch (err) {
+      setError("Anslutningsfel med servern.");
     }
-
-    dms[dmIndex].password = newPassword;
-    saveDMs(dms);
-    setMessage("Ditt lösenord har uppdaterats framgångsrikt!");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
   };
 
   if (!loggedInUser) return null;
@@ -75,7 +84,7 @@ export default function Settings() {
           Inställningar
         </h1>
         <p className="text-slate-400 mb-8">
-          Ändra ditt nuvarande lösenord.
+          Ändra ditt nuvarande lösenord för ditt spelledarkonto.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
