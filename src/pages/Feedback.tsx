@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLang } from "../context/LangContext";
 import { useSearchParams, useOutletContext, useNavigate } from "react-router-dom";
 import { Settings, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -61,6 +62,10 @@ function PillGroup({
   onSelect: (v: string) => void;
   error?: string;
 }) {
+  const { t } = useLang();
+  const optionLabel = (v: string) => ({
+    "Ja": t("Ja", "Yes"), "Nej": t("Nej", "No"), "Kanske": t("Kanske", "Maybe")
+  } as Record<string,string>)[v] || v;
   return (
     <div>
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -70,7 +75,7 @@ function PillGroup({
             className={`rfr-pill${selected === opt ? " active" : ""}`}
             onClick={() => onSelect(opt)}
           >
-            {opt}
+            {optionLabel(opt)}
           </div>
         ))}
       </div>
@@ -90,6 +95,8 @@ function StarRating({
   onChange: (v: number) => void;
   error?: string;
 }) {
+  const { t } = useLang();
+
   return (
     <div>
       <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
@@ -136,7 +143,7 @@ function StarRating({
         ))}
       </div>
       <div style={{ fontFamily: "var(--font-heading)", fontSize: "10px", letterSpacing: "0.1em", color: value > 0 ? "var(--gold)" : "var(--muted)", opacity: 0.8 }}>
-        {value > 0 ? `${value} / ${max}` : "Välj betyg"}
+        {value > 0 ? `${value} / ${max}` : t("Välj betyg", "Choose rating")}
       </div>
       {error && <div className="rfr-error" style={{ marginTop: "4px" }}>{error}</div>}
     </div>
@@ -146,6 +153,7 @@ function StarRating({
 export default function Feedback() {
   const { isSuperAdmin, loggedInUser, isAuthLoading } = useOutletContext<{ isSuperAdmin: boolean; loggedInUser: string | null; isAuthLoading: boolean }>();
   const navigate = useNavigate();
+  const { t } = useLang();
 
   useEffect(() => {
     if (!isAuthLoading && loggedInUser) {
@@ -156,20 +164,67 @@ export default function Feedback() {
   if (isAuthLoading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh", fontFamily: "var(--font-heading)", color: "var(--gold)", letterSpacing: "0.1em" }}>
-        Laddar...
+        {t("Laddar...", "Loading...")}
       </div>
     );
   }
   
   // Header text states
-  const [headerContent, setHeaderContent] = useState(() => {
+  // Default text is translated on every render. Only genuinely custom admin text is persisted.
+  const defaultHeaderContent = {
+    eyebrow: t("💬 Tyck Till", "💬 Leave feedback"),
+    title: t("Lämna feedback om spelpass/äventyr", "Leave feedback on session/adventure"),
+    description: t(
+      "Dina svar är anonyma och hjälper oss att förbättra framtida äventyr.",
+      "Your answers are anonymous and help us improve future adventures."
+    ),
+  };
+
+  const [customHeaderContent, setCustomHeaderContent] = useState<{
+    eyebrow: string;
+    title: string;
+    description: string;
+  } | null>(() => {
     const saved = localStorage.getItem("rfr_feedback_header");
-    return saved ? JSON.parse(saved) : {
-      eyebrow: "💬 Tyck Till",
-      title: "Lämna feedback om spelpass/äventyr",
-      description: "Dina svar är anonyma och hjälper oss att förbättra framtida äventyr."
-    };
+    if (!saved) return null;
+
+    try {
+      const parsed = JSON.parse(saved);
+
+      // Remove old automatically saved defaults from earlier versions.
+      const legacyDefaults = [
+        {
+          eyebrow: "💬 Tyck Till",
+          title: "Lämna feedback om spelpass/äventyr",
+          description: "Dina svar är anonyma och hjälper oss att förbättra framtida äventyr.",
+        },
+        {
+          eyebrow: "💬 Leave feedback",
+          title: "Leave feedback on session/adventure",
+          description: "Your answers are anonymous and help us improve future adventures.",
+        },
+      ];
+
+      const isLegacyDefault = legacyDefaults.some(
+        item =>
+          item.eyebrow === parsed?.eyebrow &&
+          item.title === parsed?.title &&
+          item.description === parsed?.description
+      );
+
+      if (isLegacyDefault) {
+        localStorage.removeItem("rfr_feedback_header");
+        return null;
+      }
+
+      return parsed;
+    } catch {
+      localStorage.removeItem("rfr_feedback_header");
+      return null;
+    }
   });
+
+  const headerContent = customHeaderContent ?? defaultHeaderContent;
   const [editingHeaderField, setEditingHeaderField] = useState<{
     key: "eyebrow" | "title" | "description";
     value: string;
@@ -249,22 +304,22 @@ export default function Feedback() {
 
   const validateForm = () => {
     const e: Record<string, string> = {};
-    if (!playerEmail) e.playerEmail = "E-post krävs";
-    if (playerEmail && !playerEmail.includes("@")) e.playerEmail = "Ogiltig e-post";
-    if (!dmName) e.dmName = "Välj spelledare";
-    if (ratings.funRating === 0) e.funRating = "Betygsätt sessionen";
-    if (ratings.storyEngagement === 0) e.storyEngagement = "Betygsätt berättelsen";
-    if (ratings.dmClarity === 0) e.dmClarity = "Betygsätt tydlighet";
-    if (!feedback.bestPart) e.bestPart = "Skriv något du gillade";
-    if (!feedback.playAgain) e.playAgain = "Välj ett alternativ";
-    if (!feedback.futureInvite) e.futureInvite = "Välj ett alternativ";
-    if (!feedback.futureInfo) e.futureInfo = "Välj ett alternativ";
+    if (!playerEmail) e.playerEmail = t("E-post krävs", "Email required");
+    if (playerEmail && !playerEmail.includes("@")) e.playerEmail = t("Ogiltig e-post", "Invalid email");
+    if (!dmName) e.dmName = t("Välj spelledare", "Select game master");
+    if (ratings.funRating === 0) e.funRating = t("Betygsätt sessionen", "Rate the session");
+    if (ratings.storyEngagement === 0) e.storyEngagement = t("Betygsätt berättelsen", "Rate the story");
+    if (ratings.dmClarity === 0) e.dmClarity = t("Betygsätt tydlighet", "Rate clarity");
+    if (!feedback.bestPart) e.bestPart = t("Skriv något du gillade", "Write something you liked");
+    if (!feedback.playAgain) e.playAgain = t("Välj ett alternativ", "Choose an option");
+    if (!feedback.futureInvite) e.futureInvite = t("Välj ett alternativ", "Choose an option");
+    if (!feedback.futureInfo) e.futureInfo = t("Välj ett alternativ", "Choose an option");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSubmit = () => {
-    if (!validateForm()) { alert("Vänligen fyll i alla obligatoriska fält."); return; }
+    if (!validateForm()) { alert(t("Vänligen fyll i alla obligatoriska fält.", "Please fill in all required fields.")); return; }
     const newFeedback = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
@@ -340,7 +395,7 @@ export default function Feedback() {
                     zIndex: 10,
                   }}
                   className="hover:border-gold hover:scale-105 transition-all"
-                  title="Redigera ögonbryn"
+                  title={t("Redigera ögonbryn", "Edit eyebrow")}
                 >
                   <Settings className="w-3 h-3" />
                 </button>
@@ -369,7 +424,7 @@ export default function Feedback() {
                     zIndex: 10,
                   }}
                   className="hover:border-gold hover:scale-105 transition-all"
-                  title="Redigera rubrik"
+                  title={t("Redigera rubrik", "Edit title")}
                 >
                   <Settings className="w-3 h-3" />
                 </button>
@@ -378,7 +433,7 @@ export default function Feedback() {
           </div>
           <div style={{ position: "relative", display: "inline-block" }}>
             <p style={{ margin: 0, color: "var(--muted)", fontSize: "14px" }}>
-              {adventure ? `Feedback för: ${adventure.title}` : headerContent.description}
+              {adventure ? t("Feedback för", "Feedback for") + `: ${adventure.title}` : headerContent.description}
             </p>
             {isSuperAdmin && !adventure && (
               <button
@@ -396,7 +451,7 @@ export default function Feedback() {
                   zIndex: 10,
                 }}
                 className="hover:border-gold hover:scale-105 transition-all"
-                title="Redigera beskrivning"
+                title={t("Redigera beskrivning", "Edit description")}
               >
                 <Settings className="w-3 h-3" />
               </button>
@@ -426,16 +481,16 @@ export default function Feedback() {
             />
           </div>
           <div style={{ fontFamily: "var(--font-heading)", fontSize: "10px", letterSpacing: "0.1em", color: "var(--muted)" }}>
-            {pct}% färdigt
+            {pct}% {t("färdigt", "complete")}
           </div>
         </div>
       </div>
 
       <div style={{ display: "grid", gap: "18px" }}>
         {/* Who are you */}
-        <SectionCard icon="📧" title="Vem är du?">
+        <SectionCard icon="📧" title={t("Vem är du?", "Who are you?")}>
           <div>
-            <FieldLabel>Din e-postadress *</FieldLabel>
+            <FieldLabel>{t("Din e-postadress *", "Your email address *")}</FieldLabel>
             <input
               type="email"
               className={`rfr-input${errors.playerEmail ? " error" : ""}`}
@@ -446,7 +501,7 @@ export default function Feedback() {
             {errors.playerEmail && <div className="rfr-error">{errors.playerEmail}</div>}
           </div>
           <div>
-            <FieldLabel>Vem var din spelledare (DM)? *</FieldLabel>
+            <FieldLabel>{t("Vem var din spelledare (DM)? *", "Who was your game master (GM)? *")}</FieldLabel>
             <div style={{ position: "relative" }}>
               <select
                 className={`rfr-select${errors.dmName ? " error" : ""}`}
@@ -456,7 +511,7 @@ export default function Feedback() {
                   borderColor: errors.dmName ? "rgba(200,50,50,0.55)" : undefined,
                 }}
               >
-                <option value="">-- Välj spelledare --</option>
+                <option value="">{t("-- Välj spelledare --", "-- Select game master --")}</option>
                 {dms.map(dm => (
                   <option key={dm} value={dm}>
                     {dm === 'david' ? 'Superadmin' : capitalize(dm)}
@@ -470,28 +525,28 @@ export default function Feedback() {
         </SectionCard>
 
         {/* Ratings */}
-        <SectionCard icon="⭐" title="Betygsätt spelpasset">
+        <SectionCard icon="⭐" title={t("Betygsätt spelpasset", "Rate the session")}>
           <div>
-            <FieldLabel>1. Hur roligt hade du det? (1–10) *</FieldLabel>
+            <FieldLabel>{t("1. Hur roligt hade du det? (1–10) *", "1. How much fun did you have? (1–10) *")}</FieldLabel>
             <StarRating value={ratings.funRating} max={10} onChange={v => setRatings({ ...ratings, funRating: v })} error={errors.funRating} />
           </div>
           <div>
-            <FieldLabel>2. Hur engagerande var berättelsen? (1–10) *</FieldLabel>
+            <FieldLabel>{t("2. Hur engagerande var berättelsen? (1–10) *", "2. How engaging was the story? (1–10) *")}</FieldLabel>
             <StarRating value={ratings.storyEngagement} max={10} onChange={v => setRatings({ ...ratings, storyEngagement: v })} error={errors.storyEngagement} />
           </div>
           <div>
-            <FieldLabel>3. Hur tydlig var spelledaren? (1–5) *</FieldLabel>
+            <FieldLabel>{t("3. Hur tydlig var spelledaren? (1–5) *", "3. How clear was the game master? (1–5) *")}</FieldLabel>
             <StarRating value={ratings.dmClarity} max={5} onChange={v => setRatings({ ...ratings, dmClarity: v })} error={errors.dmClarity} />
           </div>
         </SectionCard>
 
         {/* Feedback */}
-        <SectionCard icon="💬" title="Feedback">
+        <SectionCard icon="💬" title={t("Feedback", "Feedback")}>
           {[
-            { q: "4. Vad tyckte du bäst om? *", key: "bestPart", placeholder: "Berätta vad som var roligast eller mest minnesvärt...", req: true },
-            { q: "5. Hur var balansen mellan strid, rollspel och utforskning?", key: "balance", placeholder: "T.ex. För mycket strid, perfekt balans, önskar mer rollspel...", req: false },
-            { q: "6. Var det något spelledaren gjorde extra bra?", key: "dmStrengths", placeholder: "Beskriv något spelledaren gjorde riktigt bra...", req: false },
-            { q: "7. Finns det något du önskar hade varit annorlunda?", key: "improvements", placeholder: "Konstruktiv kritik uppskattas...", req: false },
+            { q: t("4. Vad tyckte du bäst om? *", "4. What did you like most? *"), key: "bestPart", placeholder: t("Berätta vad som var roligast eller mest minnesvärt...", "Tell us what was most fun or memorable..."), req: true },
+            { q: t("5. Hur var balansen mellan strid, rollspel och utforskning?", "5. How was the balance between combat, roleplay and exploration?"), key: "balance", placeholder: t("T.ex. För mycket strid, perfekt balans, önskar mer rollspel...", "E.g. too much combat, perfect balance, or wishing for more roleplay..."), req: false },
+            { q: t("6. Var det något spelledaren gjorde extra bra?", "6. Was there anything the GM did especially well?"), key: "dmStrengths", placeholder: t("Beskriv något spelledaren gjorde riktigt bra...", "Describe something the game master did especially well..."), req: false },
+            { q: t("7. Finns det något du önskar hade varit annorlunda?", "7. Is there anything you wish had been different?"), key: "improvements", placeholder: t("Konstruktiv kritik uppskattas...", "Constructive criticism is appreciated..."), req: false },
           ].map(({ q, key, placeholder, req }) => (
             <div key={key}>
               <FieldLabel>{q}</FieldLabel>
@@ -507,26 +562,26 @@ export default function Feedback() {
         </SectionCard>
 
         {/* Future play */}
-        <SectionCard icon="🎯" title="Framtida spel">
+        <SectionCard icon="🎯" title={t("Framtida spel", "Future games")}>
           <div>
-            <FieldLabel>8. Skulle du vilja spela med oss igen? *</FieldLabel>
+            <FieldLabel>{t("8. Skulle du vilja spela med oss igen? *", "8. Would you like to play with us again? *")}</FieldLabel>
             <PillGroup options={["Ja", "Kanske", "Nej"]} selected={feedback.playAgain} onSelect={v => setFeedback({ ...feedback, playAgain: v })} error={errors.playAgain} />
           </div>
           <div>
-            <FieldLabel>9. Vill du bli inbjuden till framtida spelpass? *</FieldLabel>
+            <FieldLabel>{t("9. Vill du bli inbjuden till framtida spelpass? *", "9. Do you want to be invited to future sessions? *")}</FieldLabel>
             <PillGroup options={["Ja", "Nej"]} selected={feedback.futureInvite} onSelect={v => setFeedback({ ...feedback, futureInvite: v })} error={errors.futureInvite} />
           </div>
           <div>
-            <FieldLabel>10. Vill du få information om kommande äventyr? *</FieldLabel>
+            <FieldLabel>{t("10. Vill du få information om kommande äventyr? *", "10. Do you want information about upcoming adventures? *")}</FieldLabel>
             <PillGroup options={["Ja", "Nej"]} selected={feedback.futureInfo} onSelect={v => setFeedback({ ...feedback, futureInfo: v })} error={errors.futureInfo} />
           </div>
           <div>
-            <FieldLabel>Övrig feedback</FieldLabel>
+            <FieldLabel>{t("Övrig feedback", "Additional feedback")}</FieldLabel>
             <textarea
               className="rfr-textarea"
               value={feedback.extraFeedback}
               onChange={e => setFeedback({ ...feedback, extraFeedback: e.target.value })}
-              placeholder="Är det något mer du vill dela med dig av?"
+              placeholder={t("Är det något mer du vill dela med dig av?", "Is there anything else you want to share?")}
               style={{ minHeight: "80px" }}
             />
           </div>
@@ -548,12 +603,12 @@ export default function Feedback() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
             <div>
               <div style={{ fontFamily: "var(--font-heading)", fontSize: "14px", fontWeight: 700, letterSpacing: "0.06em", color: "var(--text)", marginBottom: "4px" }}>
-                Redo att skicka in?
+                {t("Redo att skicka in?", "Ready to submit?")}
               </div>
-              <div style={{ fontSize: "14px", color: "var(--muted)" }}>Tack för att du tar dig tid att dela med dig av din feedback!</div>
+              <div style={{ fontSize: "14px", color: "var(--muted)" }}>{t("Tack för att du tar dig tid att dela med dig av din feedback!", "Thank you for taking the time to share your feedback!")}</div>
             </div>
             <button className="btn-primary" onClick={handleSubmit} style={{ fontSize: "12px", whiteSpace: "nowrap" }}>
-              🎲 &nbsp;Skicka feedback
+              {t("🎲  Skicka feedback", "🎲  Submit feedback")}
             </button>
           </div>
 
@@ -573,7 +628,7 @@ export default function Feedback() {
                 gap: "8px",
               }}
             >
-              ⚠ Vänligen fyll i alla obligatoriska fält
+              {t("⚠ Vänligen fyll i alla obligatoriska fält", "⚠ Please fill in all required fields")}
             </div>
           )}
         </div>
@@ -598,7 +653,7 @@ export default function Feedback() {
             >
               <div className="flex items-center justify-between mb-4 border-b border-[#2a2435] pb-3">
                 <h3 className="font-heading text-lg font-bold uppercase tracking-wider text-gold">
-                  Redigera rubrik
+                  {t("Redigera rubrik", "Edit heading")}
                 </h3>
                 <button
                   onClick={() => setEditingHeaderField(null)}
@@ -613,7 +668,7 @@ export default function Feedback() {
                   e.preventDefault();
                   if (editingHeaderField.value.trim()) {
                     const updated = { ...headerContent, [editingHeaderField.key]: editingHeaderField.value.trim() };
-                    setHeaderContent(updated);
+                    setCustomHeaderContent(updated);
                     localStorage.setItem("rfr_feedback_header", JSON.stringify(updated));
                     setEditingHeaderField(null);
                   }
@@ -622,7 +677,7 @@ export default function Feedback() {
               >
                 <div>
                   <label className="block text-xs text-slate-400 mb-1 uppercase tracking-wide">
-                    {editingHeaderField.key === "eyebrow" ? "Ögonbryn" : editingHeaderField.key === "title" ? "Titel" : "Beskrivning"}
+                    {editingHeaderField.key === "eyebrow" ? t("Ögonbryn", "Eyebrow") : editingHeaderField.key === "title" ? t("Titel", "Title") : t("Beskrivning", "Description")}
                   </label>
                   {editingHeaderField.key === "description" ? (
                     <textarea
@@ -649,13 +704,13 @@ export default function Feedback() {
                     onClick={() => setEditingHeaderField(null)}
                     className="btn-secondary w-1/2 !py-3 !text-[12px]"
                   >
-                    Avbryt
+                    {t("Avbryt", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     className="btn-primary w-1/2 !py-3 !text-[12px] font-bold"
                   >
-                    Spara
+                    {t("Spara", "Save")}
                   </button>
                 </div>
               </form>

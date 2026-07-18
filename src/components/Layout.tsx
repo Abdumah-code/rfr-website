@@ -1,7 +1,147 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+// @ts-expect-error webgl-fluid may not include TypeScript declarations in every setup.
+import WebGLFluid from "webgl-fluid";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { Shield } from "lucide-react";
 import logo from "./Logo Icon Colored.png";
+import { useLang } from "../context/LangContext";
+import Footer from "./Footer";
+
+
+function SmokeBackground() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fluidStartedRef = useRef(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (!fluidStartedRef.current) {
+      fluidStartedRef.current = true;
+
+      WebGLFluid(canvas, {
+        TRIGGER: "hover",
+        IMMEDIATE: true,
+        AUTO: false,
+        SPLAT_COUNT: 5,
+
+        // Performance
+        SIM_RESOLUTION: 64,
+        DYE_RESOLUTION: 512,
+        CAPTURE_RESOLUTION: 512,
+        PRESSURE_ITERATIONS: 12,
+
+        // Fluid movement
+        DENSITY_DISSIPATION: 1.2,
+        VELOCITY_DISSIPATION: 0.3,
+        PRESSURE: 0.8,
+        CURL: 30,
+        SPLAT_RADIUS: 0.08,
+        SPLAT_FORCE: 5000,
+
+        // Purple dye
+        SPLAT_COLOR: {
+          r: 0.35,
+          g: 0.08,
+          b: 0.75,
+        },
+
+        COLORFUL: false,
+        COLOR_UPDATE_SPEED: 0,
+
+        // Appearance
+        SHADING: true,
+        TRANSPARENT: true,
+        BACK_COLOR: {
+          r: 7,
+          g: 5,
+          b: 10,
+        },
+
+        BLOOM: true,
+        BLOOM_ITERATIONS: 3,
+        BLOOM_RESOLUTION: 128,
+        BLOOM_INTENSITY: 0.4,
+        BLOOM_THRESHOLD: 0.6,
+        BLOOM_SOFT_KNEE: 0.7,
+
+        SUNRAYS: false,
+        PAUSED: false,
+      });
+    }
+
+    /*
+     * webgl-fluid reads event.offsetX and event.offsetY.
+     * Synthetic MouseEvent does not reliably calculate those values,
+     * so we explicitly define them before dispatching the event.
+     */
+    const sendCanvasMouseEvent = (
+      type: "mousemove" | "mousedown",
+      sourceEvent: MouseEvent,
+    ) => {
+      const rect = canvas.getBoundingClientRect();
+      const offsetX = sourceEvent.clientX - rect.left;
+      const offsetY = sourceEvent.clientY - rect.top;
+
+      const forwardedEvent = new MouseEvent(type, {
+        clientX: sourceEvent.clientX,
+        clientY: sourceEvent.clientY,
+        screenX: sourceEvent.screenX,
+        screenY: sourceEvent.screenY,
+        buttons: sourceEvent.buttons,
+        button: sourceEvent.button,
+        bubbles: false,
+        cancelable: true,
+        view: window,
+      });
+
+      Object.defineProperty(forwardedEvent, "offsetX", {
+        configurable: true,
+        value: offsetX,
+      });
+
+      Object.defineProperty(forwardedEvent, "offsetY", {
+        configurable: true,
+        value: offsetY,
+      });
+
+      canvas.dispatchEvent(forwardedEvent);
+    };
+
+    const forwardMouseMove = (event: MouseEvent) => {
+      sendCanvasMouseEvent("mousemove", event);
+    };
+
+    const forwardMouseDown = (event: MouseEvent) => {
+      sendCanvasMouseEvent("mousedown", event);
+    };
+
+    window.addEventListener("mousemove", forwardMouseMove, { passive: true });
+    window.addEventListener("mousedown", forwardMouseDown, { passive: true });
+
+    return () => {
+      window.removeEventListener("mousemove", forwardMouseMove);
+      window.removeEventListener("mousedown", forwardMouseDown);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+        display: "block",
+        pointerEvents: "none",
+        zIndex: 0,
+        opacity: 0.88,
+      }}
+    />
+  );
+}
 
 export default function Layout() {
   const [username, setUsername] = useState("");
@@ -11,6 +151,7 @@ export default function Layout() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const location = useLocation();
+  const { lang, t, toggleLang } = useLang();
 
   useEffect(() => {
     fetchAuthStatus();
@@ -39,7 +180,7 @@ export default function Layout() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password) {
-      alert("Användarnamn och lösenord krävs.");
+      alert(t("Användarnamn och lösenord krävs.", "Username and password are required."));
       return;
     }
     try {
@@ -54,10 +195,10 @@ export default function Layout() {
         setPassword("");
         await fetchAuthStatus();
       } else {
-        alert(data.message || "Fel användarnamn eller lösenord");
+        alert(data.message || t("Fel användarnamn eller lösenord", "Incorrect username or password"));
       }
     } catch (err) {
-      alert("Anslutningsfel.");
+      alert(t("Anslutningsfel.", "Connection error."));
     }
   };
 
@@ -90,8 +231,9 @@ export default function Layout() {
     <>
       {/* Atmospheric background */}
       <div className="bg-atmosphere" />
+      <SmokeBackground />
 
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col" style={{ position: "relative", zIndex: 1 }}>
         {/* ── Header ── */}
         <header
           className="sticky top-0 z-50"
@@ -127,20 +269,21 @@ export default function Layout() {
               {/* Navigation links */}
               <nav className="flex items-center gap-1">
                 {[
-                  { to: "/", label: "Hem" },
-                  { to: "/adventures", label: "Äventyr" },
-                  { to: "/gamemasters", label: "Spelledare" },
-                  { to: "/contact", label: "Kontakt" },
+                  { to: "/", label: t("Hem", "Home") },
+                  { to: "/adventures", label: t("Äventyr", "Adventures") },
+                  { to: "/gamemasters", label: t("Spelledare", "Game Masters") },
+                  { to: "/staff", label: "Staff" },
+                  { to: "/contact", label: t("Kontakt", "Contact") },
                   ...(!loggedInUser
                     ? [
-                        { to: "/apply", label: "Bli spelledare" },
+                        { to: "/apply", label: t("Bli spelledare", "Become a GM") },
                         { to: "/feedback", label: "Feedback" },
                       ]
                     : []),
                   ...(loggedInUser
                     ? [
-                        { to: "/mail", label: "Inkorg", gold: true },
-                        { to: "/settings", label: "Inställningar", gold: true },
+                        { to: "/mail", label: t("Inkorg", "Inbox"), gold: true },
+                        { to: "/settings", label: t("Inställningar", "Settings"), gold: true },
                       ]
                     : []),
                   ...(isSuperAdmin
@@ -207,7 +350,7 @@ export default function Layout() {
                   >
                     <input
                       type="text"
-                      placeholder="Användarnamn"
+                      placeholder={t("Användarnamn", "Username")}
                       value={username}
                       onChange={e => setUsername(e.target.value)}
                       style={{
@@ -227,7 +370,7 @@ export default function Layout() {
                     />
                     <input
                       type="password"
-                      placeholder="Lösenord"
+                      placeholder={t("Lösenord", "Password")}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       style={{
@@ -270,7 +413,7 @@ export default function Layout() {
                         (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,160,48,0.35)";
                       }}
                     >
-                      Logga in
+                      {t("Logga in", "Log in")}
                     </button>
                     <Link
                       to="/apply"
@@ -291,7 +434,7 @@ export default function Layout() {
                         color: "var(--gold-light)",
                       }}
                     >
-                      Hej, {loggedInUser} {isSuperAdmin ? "(Superadmin)" : "(Spelledare)"}
+                      {t("Hej", "Hello")}, {loggedInUser} {isSuperAdmin ? "(Superadmin)" : t("(Spelledare)", "(Game Master)")}
                     </span>
                     <button
                       onClick={handleLogout}
@@ -318,7 +461,7 @@ export default function Layout() {
                         (e.currentTarget as HTMLElement).style.borderColor = "rgba(168,40,64,0.3)";
                       }}
                     >
-                      Lämna tavernan
+                      {t("Lämna tavernan", "Leave the tavern")}
                     </button>
                   </div>
                 )}
@@ -331,6 +474,9 @@ export default function Layout() {
         <main className="flex-1 py-10">
           <Outlet context={{ loggedInUser, userId, isSuperAdmin, fetchAuthStatus, isAuthLoading }} />
         </main>
+
+        {/* ── Footer ── */}
+        <Footer />
       </div>
     </>
   );

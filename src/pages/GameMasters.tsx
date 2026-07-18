@@ -1,21 +1,24 @@
 import { useState, useRef } from "react";
+import { useLang } from "../context/LangContext";
 import { useOutletContext } from "react-router-dom";
 import { Settings, Upload, X, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import defaultImage from "../components/gamemaster_default.png";
 
-const DEFAULT_TEXT = "Våra spelledare (DMs) är hjärtat i Role for Roleplay. De skapar fängslande berättelser, levande världar och spännande utmaningar för varje spelare. Vi ställer höga krav på engagemang och spelinlevelse för att garantera att varje pass blir en episk upplevelse. Genom bra förberedelser, djup inlevelse och ett varmt välkomnande skapar vi spelpass som ni kommer att minnas och prata om långt efter att tärningarna har slutat rulla.";
+const DEFAULT_TEXT_SV = "Våra spelledare (DMs) är hjärtat i Role for Roleplay. De skapar fängslande berättelser, levande världar och spännande utmaningar för varje spelare. Vi ställer höga krav på engagemang och spelinlevelse för att garantera att varje pass blir en episk upplevelse. Genom bra förberedelser, djup inlevelse och ett varmt välkomnande skapar vi spelpass som ni kommer att minnas och prata om långt efter att tärningarna har slutat rulla.";
+const DEFAULT_TEXT_EN = "Our game masters (GMs) are the heart of Role for Roleplay. They create captivating stories, living worlds and exciting challenges for every player. We hold high standards for engagement and immersion to ensure every session becomes an epic experience. Through solid preparation, deep immersion and a warm welcome, we craft sessions you will remember and talk about long after the dice have stopped rolling.";
 
 export default function GameMasters() {
   const { isSuperAdmin } = useOutletContext<{ isSuperAdmin: boolean }>();
+  const { lang, t } = useLang();
   
   // Header text states
   const [headerContent, setHeaderContent] = useState(() => {
     const saved = localStorage.getItem("rfr_gamemasters_header");
     return saved ? JSON.parse(saved) : {
-      eyebrow: "⚔ Våra Berättare",
-      title: "Spelledare (DMs)",
-      description: "Möt hjärnorna bakom äventyren vid bordet."
+      eyebrow: lang === "en" ? "⚔ Our Storytellers" : "⚔ Våra Berättare",
+      title: lang === "en" ? "Game Masters (GMs)" : "Spelledare (DMs)",
+      description: lang === "en" ? "Meet the minds behind the adventures at the table." : "Möt hjärnorna bakom äventyren vid bordet."
     };
   });
   const [editingHeaderField, setEditingHeaderField] = useState<{
@@ -24,7 +27,7 @@ export default function GameMasters() {
   } | null>(null);
 
   const [text, setText] = useState(() => {
-    return localStorage.getItem("rfr_gamemasters_text") || DEFAULT_TEXT;
+    return localStorage.getItem("rfr_gamemasters_text") || (lang === 'en' ? DEFAULT_TEXT_EN : DEFAULT_TEXT_SV);
   });
   
   const [imageUrl, setImageUrl] = useState(() => {
@@ -263,7 +266,7 @@ export default function GameMasters() {
                 letterSpacing: "0.05em",
               }}
             >
-              Vårt Spelledarteam
+              {t("Vårt Spelledarteam", "Our GM Team")}
             </h2>
             <p
               style={{

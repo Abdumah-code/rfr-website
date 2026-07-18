@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLang } from "../context/LangContext";
 import { Link, useOutletContext } from "react-router-dom";
 import { adventuresData, Adventure } from "../data/adventures";
 import { Plus, Edit, Trash2, X, AlertTriangle, Upload, Settings } from "lucide-react";
@@ -20,6 +21,7 @@ function formatDate(iso: string) {
 
 export default function Adventures() {
   const { isSuperAdmin } = useOutletContext<{ isSuperAdmin: boolean }>();
+  const { lang, t } = useLang();
   const [adventures, setAdventures] = useState<AppAdventure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dms, setDms] = useState<string[]>([]);
@@ -28,9 +30,9 @@ export default function Adventures() {
   const [headerContent, setHeaderContent] = useState(() => {
     const saved = localStorage.getItem("rfr_adventures_header");
     return saved ? JSON.parse(saved) : {
-      eyebrow: "🗺 Kommande äventyr",
-      title: "Kommande Äventyr",
-      description: "Klicka på \"Intresserad\" för att anmäla intresse. Fullt = låst."
+      eyebrow: lang === "en" ? "🗺 Upcoming Adventures" : "🗺 Kommande äventyr",
+      title: lang === "en" ? "Upcoming Adventures" : "Kommande Äventyr",
+      description: lang === "en" ? "Click \"Interested\" to register your interest. Full = locked." : "Klicka på \"Intresserad\" för att anmäla intresse. Fullt = låst."
     };
   });
   const [editingHeaderField, setEditingHeaderField] = useState<{
@@ -481,10 +483,10 @@ export default function Adventures() {
                 }}
               >
                 {[
-                  { label: "Datum", value: `${formatDate(a.date)} · ${a.time}` },
-                  { label: "Spelledare (DM)", value: a.dm },
-                  { label: "Plats", value: a.location },
-                  { label: "Max spelare", value: String(a.maxPlayers) },
+                  { label: t("Datum", "Date"), value: `${formatDate(a.date)} · ${a.time}` },
+                  { label: t("Spelledare (DM)", "Game Master"), value: a.dm },
+                  { label: t("Plats", "Location"), value: a.location },
+                  { label: t("Max spelare", "Max players"), value: String(a.maxPlayers) },
                 ].map(({ label, value }) => (
                   <div key={label}>
                     <div
@@ -524,7 +526,7 @@ export default function Adventures() {
                       opacity: 0.8,
                     }}
                   >
-                    {full ? "Fullt" : `${a.spotsLeft} platser kvar`}
+                    {full ? t("Fullt", "Full") : `${a.spotsLeft} ${t("platser kvar", "spots left")}`}
                   </span>
                   <span
                     style={{
@@ -577,7 +579,7 @@ export default function Adventures() {
                   onClick={e => { if (full) e.preventDefault(); }}
                   aria-disabled={full}
                 >
-                  {full ? "Fullt" : `Intresserad (${a.spotsLeft} kvar)`}
+                  {full ? t("Fullt", "Full") : `${t("Intresserad", "Interested")} (${a.spotsLeft} ${t("kvar", "left")})`}
                 </a>
 
                 <Link
@@ -629,7 +631,7 @@ export default function Adventures() {
 
       {isLoading && (
         <div style={{ textAlign: "center", padding: "40px", color: "var(--muted)", fontFamily: "var(--font-heading)" }}>
-          Laddar äventyr...
+          {t("Laddar äventyr...", "Loading adventures...")}
         </div>
       )}
 
@@ -647,7 +649,7 @@ export default function Adventures() {
               color: "var(--muted)",
             }}
           >
-            Inga äventyr just nu — kolla tillbaka snart.
+            {t("Inga äventyr just nu — kolla tillbaka snart.", "No adventures right now — check back soon.")}
           </p>
         </div>
       )}

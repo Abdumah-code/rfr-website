@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useLang } from "../context/LangContext";
 import { useOutletContext } from "react-router-dom";
 import { Settings, Upload, X, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -8,14 +9,15 @@ const DEFAULT_TEXT = "Har du frågor om våra spelbord, vill veta mer om hur du 
 
 export default function Contact() {
   const { isSuperAdmin } = useOutletContext<{ isSuperAdmin: boolean }>();
+  const { lang, t } = useLang();
   
   // Header text states
   const [headerContent, setHeaderContent] = useState(() => {
     const saved = localStorage.getItem("rfr_contact_header");
     return saved ? JSON.parse(saved) : {
-      eyebrow: "✉ Kontakta Oss",
-      title: "Kontakt",
-      description: "Hör av dig till oss med dina funderingar."
+      eyebrow: lang === "en" ? "✉ Contact Us" : "✉ Kontakta Oss",
+      title: lang === "en" ? "Contact" : "Kontakt",
+      description: lang === "en" ? "Reach out to us with your questions." : "Hör av dig till oss med dina funderingar."
     };
   });
   const [editingHeaderField, setEditingHeaderField] = useState<{
@@ -262,7 +264,7 @@ export default function Contact() {
                 letterSpacing: "0.05em",
               }}
             >
-              Skriv till Värdshuset
+              {t("Skriv till Värdshuset", "Write to the Tavern")}
             </h2>
             <p
               style={{

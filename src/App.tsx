@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Lock, Key, Hammer } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -13,6 +13,9 @@ import Mail from './pages/Mail';
 import ApplyForDM from './pages/ApplyForDM';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
+import Staff from './pages/Staff';
+import { LangProvider } from './context/LangContext';
+import SplashScreen from './components/SplashScreen';
 
 export default function App() {
   const [authStatus, setAuthStatus] = useState<{
@@ -21,6 +24,21 @@ export default function App() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
+  const [splashDone, setSplashDone] = useState(() => {
+    return sessionStorage.getItem('rfr-splash-done') === 'true';
+  });
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const handleSplashEnter = () => {
+    sessionStorage.setItem('rfr-splash-done', 'true');
+    setSplashDone(true);
+    // Start music on user interaction
+    if (audioRef.current) {
+      audioRef.current.volume = 0.3;
+      audioRef.current.play().catch(() => {});
+    }
+  };
+
   const [passphrase, setPassphrase] = useState('');
   const [error, setError] = useState('');
   const [lockoutTime, setLockoutTime] = useState(0);
@@ -65,10 +83,11 @@ export default function App() {
         });
       }
     } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
+    console.error(e);
+    setAuthStatus({ hasSiteAccess: true, user: null });
+  } finally {
+    setIsLoading(false);
+  }
   };
 
   const handleUnlock = async (e: React.FormEvent) => {
@@ -179,7 +198,20 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <LangProvider>
+      {/* Global background music */}
+      <audio
+        id="background-music"
+        ref={audioRef}
+        src="/musik.mp3"
+        loop
+        preload="auto"
+        style={{ display: "none" }}
+      />
+      {/* Splash screen — shown once per session */}
+      {!splashDone && <SplashScreen onEnter={handleSplashEnter} />}
+
+      <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
@@ -191,8 +223,10 @@ export default function App() {
           <Route path="mail" element={<Mail />} />
           <Route path="settings" element={<Settings />} />
           <Route path="admin" element={<Admin />} />
+          <Route path="staff" element={<Staff />} />
         </Route>
       </Routes>
     </BrowserRouter>
+    </LangProvider>
   );
 }
