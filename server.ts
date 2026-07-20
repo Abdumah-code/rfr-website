@@ -9,18 +9,21 @@ import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
+import initSqlJs from 'sql.js';
 
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const SITE_PASSWORD = process.env.SITE_PASSWORD as string;
+const DEFAULT_ADMIN_USER = process.env.DEFAULT_ADMIN_USER as string;
+const DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD as string;
 
-if (!JWT_SECRET || !SITE_PASSWORD) {
-  console.error('FATAL ERROR: JWT_SECRET or SITE_PASSWORD is not set in the environment.');
+if (!JWT_SECRET || !SITE_PASSWORD || !DEFAULT_ADMIN_USER || !DEFAULT_ADMIN_PASSWORD) {
+  console.error('FATAL ERROR: JWT_SECRET, SITE_PASSWORD, DEFAULT_ADMIN_USER, or DEFAULT_ADMIN_PASSWORD is not set in the environment.');
   process.exit(1);
 }
 
-const SUPER_ADMINS = (process.env.SUPER_ADMINS || 'david').split(',').map(s => s.trim().toLowerCase());
+const SUPER_ADMINS = (process.env.SUPER_ADMINS || DEFAULT_ADMIN_USER).split(',').map(s => s.trim().toLowerCase());
 
 function isSuperAdmin(username: string): boolean {
   return SUPER_ADMINS.includes(username.toLowerCase());
@@ -36,15 +39,55 @@ const requireSuperAdmin = (req: express.Request, res: express.Response, next: ex
 
 // ── Lightweight query helpers ───────────────────────────────────
 let pool: mysql.Pool;
+let useSqlite = false;
+let sqliteDb: any;
+
+function persistSqlite() {
+  if (sqliteDb) {
+    const data = sqliteDb.export();
+    fs.writeFileSync('sqlite.db', Buffer.from(data));
+  }
+}
+
+function sqliteToRows(result: any[]): any[] {
+  if (!result || result.length === 0) return [];
+  const { columns, values } = result[0];
+  return values.map((row: any[]) => {
+    const obj: any = {};
+    columns.forEach((col: string, idx: number) => {
+      obj[col] = row[idx];
+    });
+    return obj;
+  });
+}
+
+function cleanSqlForSqlite(sql: string): string {
+  if (sql.includes('AUTO_INCREMENT')) {
+    return sql.replace('INT AUTO_INCREMENT PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
+              .replace('INTEGER AUTO_INCREMENT PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT');
+  }
+  return sql;
+}
 
 /** SELECT that returns an array of row-objects. */
 async function queryAll(sql: string, params: any[] = []): Promise<any[]> {
+  if (useSqlite) {
+    const cleanSql = cleanSqlForSqlite(sql);
+    const res = sqliteDb.exec(cleanSql, params);
+    return sqliteToRows(res);
+  }
   const [rows] = await pool.execute(sql, params);
   return rows as any[];
 }
 
 /** SELECT that returns the first matching row, or undefined. */
 async function queryOne(sql: string, params: any[] = []): Promise<any | undefined> {
+  if (useSqlite) {
+    const cleanSql = cleanSqlForSqlite(sql);
+    const res = sqliteDb.exec(cleanSql, params);
+    const rows = sqliteToRows(res);
+    return rows.length > 0 ? rows[0] : undefined;
+  }
   const [rows] = await pool.execute(sql, params);
   const arr = rows as any[];
   return arr.length > 0 ? arr[0] : undefined;
@@ -52,22 +95,47 @@ async function queryOne(sql: string, params: any[] = []): Promise<any | undefine
 
 /** INSERT / UPDATE / DELETE — runs the statement and persists to disk. */
 async function execute(sql: string, params: any[] = []): Promise<void> {
-  await pool.execute(sql, params);
+  if (useSqlite) {
+    const cleanSql = cleanSqlForSqlite(sql);
+    sqliteDb.run(cleanSql, params);
+    persistSqlite();
+  } else {
+    await pool.execute(sql, params);
+  }
 }
 
 // ── Server ──────────────────────────────────────────────────────
 async function startServer() {
-  // Initialise MySQL connection pool
-  pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || '3306', 10),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  });
+  // Try to connect to MySQL database
+  try {
+    console.log('Attempting to connect to MySQL database...');
+    pool = mysql.createPool({
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '3306', 10),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+      connectTimeout: 2000
+    });
+    // Test the connection
+    const conn = await pool.getConnection();
+    conn.release();
+    console.log('Successfully connected to MySQL database!');
+  } catch (err) {
+    console.warn('Could not connect to MySQL database. Falling back to local SQLite database (sqlite.db)...');
+    useSqlite = true;
+    
+    const SQL = await initSqlJs();
+    if (fs.existsSync('sqlite.db')) {
+      const filebuffer = fs.readFileSync('sqlite.db');
+      sqliteDb = new SQL.Database(filebuffer);
+    } else {
+      sqliteDb = new SQL.Database();
+    }
+  }
 
   const app = express();
   const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -88,7 +156,7 @@ async function startServer() {
 
   const loginLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 5,
+    max: 10,
     message: { success: false, message: 'För många inloggningsförsök, vänligen försök igen senare.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -135,11 +203,7 @@ async function startServer() {
     const userCount = userCountRow ? Number(userCountRow.count) : 0;
     if (userCount === 0) {
       const defaultUsers = [
-        { username: 'david', password: 'david' },
-        { username: 'daniel', password: 'daniel' },
-        { username: 'pontus', password: 'pontus' },
-        { username: 'thomas', password: 'thomas' },
-        { username: 'gideon', password: 'gideon' },
+        { username: DEFAULT_ADMIN_USER, password: DEFAULT_ADMIN_PASSWORD }
       ];
       for (const u of defaultUsers) {
         const hash = bcrypt.hashSync(u.password, 10);
