@@ -8,6 +8,6 @@ export default defineConfig({
     outDir: 'dist',
   },
   server: {
-    allowedHosts: ['imbecile-target-unpeeled.ngrok-free.dev'],
+    allowedHosts: ['.ngrok-free.dev'],
   },
 });
